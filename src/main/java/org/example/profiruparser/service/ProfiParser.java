@@ -1,55 +1,196 @@
 package org.example.profiruparser.service;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
+import io.github.bonigarcia.wdm.WebDriverManager;
+import org.example.profiruparser.domain.dto.ProfiOrder;
+import org.openqa.selenium.*;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.interactions.Actions;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.WebDriverWait;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.example.profiruparser.domain.dto.ProfiOrder;
-import org.openqa.selenium.By;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
-import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.chrome.ChromeOptions;
-import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
-
 public class ProfiParser {
-
     private WebDriver driver;
     private WebDriverWait wait;
     private boolean loggedIn = false;
 
     public ProfiParser() {
-        ChromeOptions options = new ChromeOptions();
-        // options.addArguments("--headless"); // если нужен безголовый режим
-        options.addArguments("--no-sandbox");
-        options.addArguments("--disable-dev-shm-usage");
+        // Инициализация драйвера вынесена из конструктора
 
-        driver = new ChromeDriver(options);
-        wait = new WebDriverWait(driver, Duration.ofSeconds(15));
+    }
+
+    private void initDriver() {
+        if (driver == null) {
+            WebDriverManager.chromedriver().setup();
+
+            ChromeOptions options = new ChromeOptions();
+            options.addArguments("--start-maximized");
+            options.addArguments("--disable-blink-features=AutomationControlled");
+            options.addArguments("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36");
+
+            // Явное указание пути к Chrome (проверьте путь на вашей системе!)
+            options.setBinary("C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe");
+
+            driver = new ChromeDriver(options);
+            wait = new WebDriverWait(driver, Duration.ofSeconds(20));
+        }
     }
 
     public void login(String login, String password) throws Exception {
+        initDriver();
         driver.get("https://profi.ru/backoffice/a.php");
 
-        WebElement loginInput = wait.until(ExpectedConditions.visibilityOfElementLocated(
-                By.cssSelector("input.login-form__input-login")));
-        loginInput.clear();
-        loginInput.sendKeys(login);
+        try {
+            if (isCaptchaPresent()) {
+                handleCaptcha();
+            }
 
-        WebElement passwordInput = driver.findElement(By.cssSelector("input.login-form__input-password"));
-        passwordInput.clear();
-        passwordInput.sendKeys(password);
+            WebElement loginInput = wait.until(ExpectedConditions.visibilityOfElementLocated(
+                    By.cssSelector("input.login-form__input-login")));
+            humanType(loginInput, login);
 
-        WebElement submitButton = driver.findElement(By.cssSelector("a.ButtonsContainer__SubmitButton-sc-1bmmrie-5"));
-        submitButton.click();
+            WebElement passwordInput = wait.until(ExpectedConditions.visibilityOfElementLocated(
+                    By.cssSelector("input.login-form__input-password")));
+            humanType(passwordInput, password);
 
-        // Ждём, что загрузятся заказы (или другой элемент, который появляется после входа)
-        wait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector(".order-card")));
+            if (isCaptchaPresent()) {
+                handleCaptcha();
+            }
 
-        loggedIn = true;
+            WebElement submitButton = wait.until(ExpectedConditions.elementToBeClickable(
+                    By.cssSelector("a.ButtonsContainer__SubmitButton-sc-1bmmrie-5")));
+
+            ((JavascriptExecutor) driver).executeScript("arguments[0].click();", submitButton);
+
+            // Явное ожидание перехода на страницу заказов и загрузки ключевых элементов
+            wait.until(ExpectedConditions.urlContains("backoffice/n.php"));
+
+            By orderCardSelector = By.cssSelector(".TaskCard_taskCard__uP7Hp, [data-test-id='task-card']");
+
+            wait.until(ExpectedConditions.or(
+                    ExpectedConditions.visibilityOfElementLocated(By.cssSelector(".user-avatar")),
+                    ExpectedConditions.visibilityOfElementLocated(orderCardSelector)
+            ));
+
+            loggedIn = true;
+        } catch (Exception e) {
+            saveDebugInfo("login_error");
+            throw e;
+        }
+    }
+
+
+    /*public void login(String login, String password) throws Exception {
+        initDriver();
+        driver.get("https://profi.ru/backoffice/a.php");
+
+        try {
+            // Проверка на капчу
+            if (isCaptchaPresent()) {
+                handleCaptcha();
+            }
+
+            // Ввод логина
+            WebElement loginInput = wait.until(ExpectedConditions.visibilityOfElementLocated(
+                    By.cssSelector("input.login-form__input-login")));
+            humanType(loginInput, login);
+
+            // Ввод пароля
+            WebElement passwordInput = wait.until(ExpectedConditions.visibilityOfElementLocated(
+                    By.cssSelector("input.login-form__input-password")));
+            humanType(passwordInput, password);
+
+            // Проверка на капчу после ввода
+            if (isCaptchaPresent()) {
+                handleCaptcha();
+            }
+
+            // Локатор для кнопки (ОБНОВЛЕННЫЙ!)
+            WebElement submitButton = wait.until(ExpectedConditions.elementToBeClickable(
+                    By.cssSelector("a.ButtonsContainer__SubmitButton-sc-1bmmrie-5")));
+
+            // Клик через JavaScript (обязательно!)
+            ((JavascriptExecutor) driver).executeScript("arguments[0].click();", submitButton);
+
+            // Ожидание успешного входа
+            wait.until(ExpectedConditions.or(
+                    ExpectedConditions.visibilityOfElementLocated(By.cssSelector(".user-avatar")),
+                    ExpectedConditions.urlContains("backoffice/n.php"),
+                    ExpectedConditions.titleContains("Профи.ру"),
+                    ExpectedConditions.invisibilityOfElementLocated(By.cssSelector("input[type='password']"))
+            ));
+
+            loggedIn = true;
+        } catch (Exception e) {
+            saveDebugInfo("login_error");
+            throw e;
+        }
+    }*/
+
+    private WebElement findLoginButton() {
+        try {
+            // Попытка 1: По тексту кнопки
+            return wait.until(ExpectedConditions.elementToBeClickable(
+                    By.xpath("//button[contains(., 'Войти') or contains(., 'Sign in')]")));
+        } catch (TimeoutException e) {
+            try {
+                // Попытка 2: По классу
+                return wait.until(ExpectedConditions.elementToBeClickable(
+                        By.cssSelector("button[type='submit'], input[type='submit']")));
+            } catch (TimeoutException ex) {
+                // Попытка 3: По ID или другим атрибутам
+                return wait.until(ExpectedConditions.elementToBeClickable(
+                        By.cssSelector("#login-button, [data-test-id='login-button']")));
+            }
+        }
+    }
+
+    private boolean isCaptchaPresent() {
+        try {
+            return !driver.findElements(By.cssSelector(".captcha-container, iframe[src*='captcha']")).isEmpty();
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private void handleCaptcha() throws InterruptedException {
+        System.out.println("Обнаружена CAPTCHA! Требуется ручной ввод");
+        // Здесь можно добавить уведомление в Telegram
+        sendTelegramAlert("Обнаружена CAPTCHA! Требуется ручной ввод");
+
+        // Ожидание 2 минуты для ручного ввода
+        Thread.sleep(120000);
+
+        // Проверка, исчезла ли капча
+        if (isCaptchaPresent()) {
+            throw new RuntimeException("CAPTCHA не была решена в течение 2 минут");
+        }
+    }
+
+    private void saveDebugInfo(String prefix) {
+        try {
+            // Сохранение HTML страницы
+            String pageSource = driver.getPageSource();
+            Files.write(Path.of(prefix + "_page.html"), pageSource.getBytes());
+
+            // Сохранение скриншота
+            byte[] screenshot = ((TakesScreenshot) driver).getScreenshotAs(OutputType.BYTES);
+            Files.write(Path.of(prefix + "_screenshot.png"), screenshot);
+        } catch (Exception e) {
+            System.err.println("Не удалось сохранить отладочную информацию: " + e.getMessage());
+        }
+    }
+
+    private void sendTelegramAlert(String message) {
+        // Реализуйте отправку сообщения в Telegram
+        // Это можно сделать через ваш ProfiBot или отдельно
+        System.out.println("ALERT: " + message);
     }
 
     public List<ProfiOrder> parseOrders(String searchQuery) throws Exception {
@@ -57,28 +198,55 @@ public class ProfiParser {
             throw new IllegalStateException("Не выполнен вход. Сначала вызовите login()");
         }
 
+        driver.get("https://profi.ru/backoffice/n.php?query=" + searchQuery);
+
+        // Новые локаторы для Profi.ru
+        By orderCardSelector = By.cssSelector(".TaskCard_taskCard__uP7Hp, [data-test-id='task-card']");
+
+        // Ожидание появления заказов
+        wait.until(ExpectedConditions.presenceOfElementLocated(orderCardSelector));
+
+        // Имитация человеческого скроллинга
+        ((JavascriptExecutor) driver).executeScript("window.scrollTo(0, document.body.scrollHeight / 3);");
+        Thread.sleep(2000);
+        ((JavascriptExecutor) driver).executeScript("window.scrollTo(0, document.body.scrollHeight * 2/3);");
+        Thread.sleep(2000);
+
+        List<WebElement> items = driver.findElements(orderCardSelector);
         List<ProfiOrder> orders = new ArrayList<>();
-        String url = "https://profi.ru/backoffice/n.php?query=" +
-                URLEncoder.encode(searchQuery, StandardCharsets.UTF_8);
 
-        driver.get(url);
-
-        wait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector(".order-card")));
-
-        List<WebElement> items = driver.findElements(By.cssSelector(".order-card"));
         for (WebElement item : items) {
             try {
-                String id = item.getAttribute("data-order-id");
-                String title = item.findElement(By.cssSelector(".title")).getText();
-                String price = item.findElement(By.cssSelector(".price")).getText();
+                String id = item.getAttribute("data-order-id") != null ?
+                        item.getAttribute("data-order-id") :
+                        item.getAttribute("data-test-id");
 
-                ProfiOrder order = new ProfiOrder(id, title, price);
-                orders.add(order);
-            } catch (Exception e) {
-                e.printStackTrace();
+                String title = item.findElement(By.cssSelector(".TaskCard_title__Xq7jU, [data-test-id='task-title']")).getText();
+                String price = item.findElement(By.cssSelector(".TaskCard_price__2lpcq, [data-test-id='task-price']")).getText();
+
+                orders.add(new ProfiOrder(id, title, price));
+            } catch (NoSuchElementException e) {
+                System.err.println("Не удалось извлечь данные заказа: " + e.getMessage());
             }
         }
+
         return orders;
+    }
+
+    private void humanType(WebElement element, String text) throws InterruptedException {
+        for (char c : text.toCharArray()) {
+            element.sendKeys(String.valueOf(c));
+            Thread.sleep(50 + (long)(Math.random() * 100));
+        }
+    }
+
+    private void humanClick(WebElement element) throws InterruptedException {
+        new Actions(driver)
+                .moveToElement(element)
+                .pause(Duration.ofMillis(500))
+                .click()
+                .perform();
+        Thread.sleep(1000);
     }
 
     public void close() {
