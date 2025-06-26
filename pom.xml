@@ -19,9 +19,10 @@
 
     <properties>
             <java.version>17</java.version>
-            <selenium.version>4.16.1</selenium.version>
+            <selenium.version>4.21.0</selenium.version>
             <telegrambots.version>7.2.0</telegrambots.version>
-            <webdrivermanager.version>6.1.0</webdrivermanager.version>
+            <webdrivermanager.version>5.8.0</webdrivermanager.version>
+            <chrome.driver.version>138.0.7045.62</chrome.driver.version>
     </properties>
 
     <dependencies>
@@ -76,6 +77,18 @@
             <artifactId>spring-boot-configuration-processor</artifactId>
             <optional>true</optional>
         </dependency>
+
+        <dependency>
+            <groupId>org.seleniumhq.selenium</groupId>
+            <artifactId>selenium-devtools-v137</artifactId>
+            <version>4.33.0</version>
+        </dependency>
+
+       <!-- <dependency>
+            <groupId>org.seleniumhq.selenium</groupId>
+            <artifactId>selenium-devtools-v138</artifactId>
+            <version>${selenium.version}</version>
+        </dependency>-->
 
     </dependencies>
 
