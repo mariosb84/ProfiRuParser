@@ -44,54 +44,11 @@ public class ProfiParser {
 
     public void login(String login, String password) throws Exception {
         initDriver();
-        driver.get("https://profi.ru/backoffice/a.php");
+        String loginUrl = "https://profi.ru/backoffice/a.php";
+        driver.get(loginUrl);
 
         try {
-            if (isCaptchaPresent()) {
-                handleCaptcha();
-            }
-
-            WebElement loginInput = wait.until(ExpectedConditions.visibilityOfElementLocated(
-                    By.cssSelector("input.login-form__input-login")));
-            humanType(loginInput, login);
-
-            WebElement passwordInput = wait.until(ExpectedConditions.visibilityOfElementLocated(
-                    By.cssSelector("input.login-form__input-password")));
-            humanType(passwordInput, password);
-
-            if (isCaptchaPresent()) {
-                handleCaptcha();
-            }
-
-            WebElement submitButton = wait.until(ExpectedConditions.elementToBeClickable(
-                    By.cssSelector("a.ButtonsContainer__SubmitButton-sc-1bmmrie-5")));
-
-            ((JavascriptExecutor) driver).executeScript("arguments[0].click();", submitButton);
-
-            // Явное ожидание перехода на страницу заказов и загрузки ключевых элементов
-            wait.until(ExpectedConditions.urlContains("backoffice/n.php"));
-
-            By orderCardSelector = By.cssSelector(".TaskCard_taskCard__uP7Hp, [data-test-id='task-card']");
-
-            wait.until(ExpectedConditions.or(
-                    ExpectedConditions.visibilityOfElementLocated(By.cssSelector(".user-avatar")),
-                    ExpectedConditions.visibilityOfElementLocated(orderCardSelector)
-            ));
-
-            loggedIn = true;
-        } catch (Exception e) {
-            saveDebugInfo("login_error");
-            throw e;
-        }
-    }
-
-
-    /*public void login(String login, String password) throws Exception {
-        initDriver();
-        driver.get("https://profi.ru/backoffice/a.php");
-
-        try {
-            // Проверка на капчу
+            // Проверка капчи
             if (isCaptchaPresent()) {
                 handleCaptcha();
             }
@@ -106,32 +63,40 @@ public class ProfiParser {
                     By.cssSelector("input.login-form__input-password")));
             humanType(passwordInput, password);
 
-            // Проверка на капчу после ввода
+            // Проверка капчи после ввода
             if (isCaptchaPresent()) {
                 handleCaptcha();
             }
 
-            // Локатор для кнопки (ОБНОВЛЕННЫЙ!)
+            // Клик по кнопке входа
             WebElement submitButton = wait.until(ExpectedConditions.elementToBeClickable(
                     By.cssSelector("a.ButtonsContainer__SubmitButton-sc-1bmmrie-5")));
-
-            // Клик через JavaScript (обязательно!)
             ((JavascriptExecutor) driver).executeScript("arguments[0].click();", submitButton);
 
-            // Ожидание успешного входа
+            // Ожидание успешного входа по изменению контента страницы
             wait.until(ExpectedConditions.or(
+                    // Вариант 1: Появление аватара пользователя
                     ExpectedConditions.visibilityOfElementLocated(By.cssSelector(".user-avatar")),
-                    ExpectedConditions.urlContains("backoffice/n.php"),
-                    ExpectedConditions.titleContains("Профи.ру"),
-                    ExpectedConditions.invisibilityOfElementLocated(By.cssSelector("input[type='password']"))
+
+                    // Вариант 2: Исчезновение формы входа
+                    ExpectedConditions.invisibilityOfElementLocated(By.cssSelector(".login-form")),
+
+                    // Вариант 3: Появление элементов главной страницы
+                    ExpectedConditions.visibilityOfElementLocated(
+                            By.cssSelector(".search-form, .order-card, .TaskCard_taskCard__uP7Hp"))
             ));
+
+            // Дополнительная проверка: если URL не изменился, но контент обновился
+            if (driver.getCurrentUrl().equals(loginUrl)) {
+                System.out.println("URL не изменился, но контент страницы обновлен. Авторизация успешна.");
+            }
 
             loggedIn = true;
         } catch (Exception e) {
             saveDebugInfo("login_error");
             throw e;
         }
-    }*/
+    }
 
     private WebElement findLoginButton() {
         try {
@@ -197,6 +162,8 @@ public class ProfiParser {
         if (!loggedIn) {
             throw new IllegalStateException("Не выполнен вход. Сначала вызовите login()");
         }
+
+        // Переходим на страницу поиска, даже если мы уже на ней
 
         driver.get("https://profi.ru/backoffice/n.php?query=" + searchQuery);
 
