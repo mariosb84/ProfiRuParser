@@ -13,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class ProfiParser {
@@ -92,6 +93,18 @@ public class ProfiParser {
             }
 
             loggedIn = true;
+
+            // Закрываем возможные всплывающие окна
+            closeWelcomePopupIfPresent();
+
+            // Переходим на вкладку заказов
+            navigateToOrdersPage();
+
+            // Дополнительная проверка
+            if (!isOrdersPageActive()) {
+                throw new Exception("Вкладка 'Заказы' не стала активной после перехода");
+            }
+
         } catch (Exception e) {
             saveDebugInfo("login_error");
             throw e;
@@ -208,17 +221,95 @@ public class ProfiParser {
     }
 
     private void humanClick(WebElement element) throws InterruptedException {
-        new Actions(driver)
-                .moveToElement(element)
-                .pause(Duration.ofMillis(500))
-                .click()
-                .perform();
-        Thread.sleep(1000);
+        try {
+            // Плавное перемещение к элементу
+            new Actions(driver)
+                    .moveToElement(element)
+                    .pause(Duration.ofMillis(200))
+                    .perform();
+
+            // Небольшая случайная задержка перед кликом
+            Thread.sleep(200 + (long)(Math.random() * 300));
+
+            // Клик через JavaScript для надежности
+            ((JavascriptExecutor) driver).executeScript("arguments[0].click();", element);
+
+            // Задержка после клика
+            Thread.sleep(400 + (long)(Math.random() * 500));
+        } catch (StaleElementReferenceException e) {
+            // Элемент мог устареть - попробуем найти снова и кликнуть
+            System.out.println("Элемент устарел, повторяем клик...");
+            WebElement refreshedElement = wait.until(ExpectedConditions.elementToBeClickable(
+                    By.xpath(".//ancestor-or-self::*[local-name()='a' or local-name()='button']")
+            ));
+            ((JavascriptExecutor) driver).executeScript("arguments[0].click();", refreshedElement);
+        }
     }
 
     public void close() {
         if (driver != null) {
             driver.quit();
+        }
+    }
+
+    private boolean isOrdersPageActive() {
+        try {
+            // Проверяем активное состояние вкладки
+            return wait.until(ExpectedConditions.attributeContains(
+                    By.xpath("//a[.//div[text()='Заказы']"),
+                    "class",
+                    "active"
+            ));
+        } catch (TimeoutException e) {
+            return false;
+        }
+    }
+
+    private void navigateToOrdersPage() throws Exception {
+        try {
+            // Локатор для кнопки "Заказы" в меню
+            WebElement ordersTab = wait.until(ExpectedConditions.elementToBeClickable(
+                    By.xpath("//a[contains(@class, 'NavigationBarItem') and .//div[text()='Заказы']]")
+            ));
+
+            // Клик с человеческим поведением
+            humanClick(ordersTab);
+
+            // Ожидание загрузки страницы заказов
+            wait.until(ExpectedConditions.visibilityOfElementLocated(
+                    By.cssSelector(".TaskCard_taskCard__uP7Hp, [data-test-id='task-card']")
+            ));
+
+            System.out.println("Успешно перешли на вкладку 'Заказы'");
+        } catch (TimeoutException e) {
+            saveDebugInfo("orders_tab_error");
+            throw new Exception("Не удалось найти вкладку 'Заказы'", e);
+        }
+    }
+
+    private void closeWelcomePopupIfPresent() {
+        try {
+            // Попробуем найти кнопку закрытия по разным локаторам
+            List<By> closeButtons = Arrays.asList(
+                    By.cssSelector(".Modal__closeButton"),
+                    By.cssSelector("[data-test-id='welcome-close']"),
+                    By.cssSelector("button[aria-label='Закрыть']"),
+                    By.xpath("//button[contains(., 'Закрыть')]")
+            );
+
+            for (By locator : closeButtons) {
+                try {
+                    WebElement closeButton = wait.until(ExpectedConditions.elementToBeClickable(locator));
+                    humanClick(closeButton);
+                    System.out.println("Закрыли приветственное окно");
+                    Thread.sleep(1000); // Даем окну время закрыться
+                    return; // Выходим после успешного закрытия
+                } catch (TimeoutException | NoSuchElementException ignored) {
+                    // Пробуем следующий локатор
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Ошибка при закрытии приветственного окна: " + e.getMessage());
         }
     }
 
