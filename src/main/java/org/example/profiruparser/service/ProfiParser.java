@@ -9,6 +9,8 @@ import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -176,33 +178,35 @@ public class ProfiParser {
             throw new IllegalStateException("Не выполнен вход. Сначала вызовите login()");
         }
 
-        // Переходим на страницу поиска, даже если мы уже на ней
+        // Если мы уже на странице заказов, не нужно переходить снова
+        if (!isOrdersPageActive()) {
+            navigateToOrdersPage();
+        }
 
-        driver.get("https://profi.ru/backoffice/n.php?query=" + searchQuery);
+        // Если есть поисковый запрос, добавляем его к URL
+        if (searchQuery != null && !searchQuery.trim().isEmpty()) {
+            driver.get("https://profi.ru/backoffice/n.php?query=" + URLEncoder.encode(searchQuery, StandardCharsets.UTF_8));
+        }
 
         // Новые локаторы для Profi.ru
-        By orderCardSelector = By.cssSelector(".TaskCard_taskCard__uP7Hp, [data-test-id='task-card']");
+        By orderCardSelector = By.cssSelector("a[id^='7'][data-testid$='order-snippet']");
+        By titleSelector = By.cssSelector(".SubjectAndPriceStyles__SubjectsText-sc-18v5hu8-1");
+        By priceSelector = By.cssSelector(".SubjectAndPriceStyles__PriceValue-sc-18v5hu8-5");
 
-        // Ожидание появления заказов
+        // Ожидание появления хотя бы одного заказа
         wait.until(ExpectedConditions.presenceOfElementLocated(orderCardSelector));
 
-        // Имитация человеческого скроллинга
-        ((JavascriptExecutor) driver).executeScript("window.scrollTo(0, document.body.scrollHeight / 3);");
-        Thread.sleep(2000);
-        ((JavascriptExecutor) driver).executeScript("window.scrollTo(0, document.body.scrollHeight * 2/3);");
-        Thread.sleep(2000);
+        // Имитация человеческого поведения
+        humanScroll();
 
         List<WebElement> items = driver.findElements(orderCardSelector);
         List<ProfiOrder> orders = new ArrayList<>();
 
         for (WebElement item : items) {
             try {
-                String id = item.getAttribute("data-order-id") != null ?
-                        item.getAttribute("data-order-id") :
-                        item.getAttribute("data-test-id");
-
-                String title = item.findElement(By.cssSelector(".TaskCard_title__Xq7jU, [data-test-id='task-title']")).getText();
-                String price = item.findElement(By.cssSelector(".TaskCard_price__2lpcq, [data-test-id='task-price']")).getText();
+                String id = item.getAttribute("id");
+                String title = item.findElement(titleSelector).getText();
+                String price = item.findElement(priceSelector).getText();
 
                 orders.add(new ProfiOrder(id, title, price));
             } catch (NoSuchElementException e) {
@@ -211,6 +215,17 @@ public class ProfiParser {
         }
 
         return orders;
+    }
+
+    private void humanScroll() throws InterruptedException {
+        JavascriptExecutor js = (JavascriptExecutor) driver;
+        long height = (Long) js.executeScript("return document.body.scrollHeight");
+
+        // Плавный скроллинг в несколько этапов
+        for (int i = 1; i <= 3; i++) {
+            js.executeScript("window.scrollTo(0, " + (height * i / 3) + ")");
+            Thread.sleep(1000 + (long)(Math.random() * 1000));
+        }
     }
 
     private void humanType(WebElement element, String text) throws InterruptedException {
@@ -252,38 +267,28 @@ public class ProfiParser {
         }
     }
 
-    private boolean isOrdersPageActive() {
-        try {
-            // Проверяем активное состояние вкладки
-            return wait.until(ExpectedConditions.attributeContains(
-                    By.xpath("//a[.//div[text()='Заказы']"),
-                    "class",
-                    "active"
-            ));
-        } catch (TimeoutException e) {
-            return false;
-        }
-    }
-
     private void navigateToOrdersPage() throws Exception {
         try {
-            // Локатор для кнопки "Заказы" в меню
+            // Локатор для кнопки "Заказы" в мобильном меню
             WebElement ordersTab = wait.until(ExpectedConditions.elementToBeClickable(
-                    By.xpath("//a[contains(@class, 'NavigationBarItem') and .//div[text()='Заказы']]")
+                    By.xpath("//a[contains(@href, '/backoffice/n.php')]//div[contains(text(), 'Заказы')]")
             ));
 
             // Клик с человеческим поведением
             humanClick(ordersTab);
 
-            // Ожидание загрузки страницы заказов
-            wait.until(ExpectedConditions.visibilityOfElementLocated(
-                    By.cssSelector(".TaskCard_taskCard__uP7Hp, [data-test-id='task-card']")
+            // Ожидание загрузки страницы заказов (проверяем по заголовку или первому заказу)
+            wait.until(ExpectedConditions.or(
+                    ExpectedConditions.presenceOfElementLocated(
+                            By.xpath("//h1[contains(text(), 'Заказы')]")),
+                    ExpectedConditions.presenceOfElementLocated(
+                            By.cssSelector("[id^='7']")) // ID заказов начинаются с 7
             ));
 
             System.out.println("Успешно перешли на вкладку 'Заказы'");
         } catch (TimeoutException e) {
             saveDebugInfo("orders_tab_error");
-            throw new Exception("Не удалось найти вкладку 'Заказы'", e);
+            throw new Exception("Не удалось найти или кликнуть вкладку 'Заказы'", e);
         }
     }
 
@@ -310,6 +315,20 @@ public class ProfiParser {
             }
         } catch (Exception e) {
             System.err.println("Ошибка при закрытии приветственного окна: " + e.getMessage());
+        }
+    }
+
+    private boolean isOrdersPageActive() {
+        try {
+            // Проверяем активное состояние вкладки по классу или атрибуту
+            return wait.until(ExpectedConditions.attributeContains(
+                    By.xpath("//a[contains(@href, '/backoffice/n.php')]"),
+                    "class",
+                    "active"
+            ));
+        } catch (TimeoutException e) {
+            // Альтернативная проверка по URL
+            return driver.getCurrentUrl().contains("/backoffice/n.php");
         }
     }
 
