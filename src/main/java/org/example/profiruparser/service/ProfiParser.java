@@ -208,7 +208,14 @@ public class ProfiParser {
                 String title = item.findElement(titleSelector).getText();
                 String price = item.findElement(priceSelector).getText();
 
-                orders.add(new ProfiOrder(id, title, price));
+
+                // Фильтрация по ключевым словам (если searchQuery задан)
+                if (searchQuery == null || searchQuery.isEmpty() ||
+                        title.toLowerCase().contains(searchQuery.toLowerCase())) {
+                    orders.add(new ProfiOrder(id, title, price));
+                }
+                //orders.add(new ProfiOrder(id, title, price));
+
             } catch (NoSuchElementException e) {
                 System.err.println("Не удалось извлечь данные заказа: " + e.getMessage());
             }
@@ -329,6 +336,54 @@ public class ProfiParser {
         } catch (TimeoutException e) {
             // Альтернативная проверка по URL
             return driver.getCurrentUrl().contains("/backoffice/n.php");
+        }
+    }
+
+    /*не используем*/
+    public void fillPassportData(
+            String passportNumber,
+            String passportIssueDate,
+            String passportIssuedBy
+    ) throws Exception {
+        try {
+            // Переход на страницу редактирования профиля
+            driver.get("https://profi.ru/backoffice/a.php");
+
+            // Открытие раздела с паспортными данными
+            WebElement passportSection = wait.until(ExpectedConditions.elementToBeClickable(
+                    By.xpath("//div[contains(text(), 'Паспортные данные')]")
+            ));
+            passportSection.click();
+
+            // Заполнение полей
+            WebElement numberInput = wait.until(ExpectedConditions.visibilityOfElementLocated(
+                    By.cssSelector("input[name='passport_number']")
+            ));
+            numberInput.sendKeys(passportNumber);
+
+            WebElement dateInput = wait.until(ExpectedConditions.visibilityOfElementLocated(
+                    By.cssSelector("input[name='passport_issue_date']")
+            ));
+            dateInput.sendKeys(passportIssueDate);
+
+            WebElement issuedByInput = wait.until(ExpectedConditions.visibilityOfElementLocated(
+                    By.cssSelector("input[name='passport_issued_by']")
+            ));
+            issuedByInput.sendKeys(passportIssuedBy);
+
+            // Сохранение
+            WebElement saveButton = wait.until(ExpectedConditions.elementToBeClickable(
+                    By.cssSelector("button[type='submit']")
+            ));
+            saveButton.click();
+
+            // Проверка успешного сохранения
+            wait.until(ExpectedConditions.visibilityOfElementLocated(
+                    By.cssSelector(".alert-success")
+            ));
+        } catch (Exception e) {
+            saveDebugInfo("passport_error");
+            throw e;
         }
     }
 

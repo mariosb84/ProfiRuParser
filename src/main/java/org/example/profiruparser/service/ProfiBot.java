@@ -43,6 +43,8 @@ public class ProfiBot extends TelegramLongPollingBot {
 
     private final ExecutorService executor = Executors.newFixedThreadPool(4);
 
+    private final Map<Long, String> tempPassportData = new HashMap<>();
+
     // Храним состояние авторизации и этапы ввода для каждого пользователя
     private enum BotState {
         NONE,
@@ -108,11 +110,13 @@ public class ProfiBot extends TelegramLongPollingBot {
                     case WAITING_FOR_PASSWORD:
                         String login = tempLogins.get(chatId);
                         String password = messageText.trim();
+
                         if (profiLogin.equals(login) && profiPassword.equals(password)) {
                             userStates.put(chatId, BotState.AUTHORIZED);
                             tempLogins.remove(chatId);
                             sendMessage(chatId, "Авторизация прошла успешно!");
                             sendMainMenu(chatId);
+
                         } else {
                             sendMessage(chatId, "Неверный логин или пароль. Попробуйте снова.\nВведите логин:");
                             userStates.put(chatId, BotState.WAITING_FOR_USERNAME);
@@ -125,6 +129,8 @@ public class ProfiBot extends TelegramLongPollingBot {
                 }
                 return;
             }
+
+
 
             // Если авторизован, обрабатываем команды меню и остальной функционал
             if (state == BotState.AUTHORIZED) {
@@ -292,7 +298,6 @@ public class ProfiBot extends TelegramLongPollingBot {
         parser.close();
         executor.shutdown();
     }
-
 
 }
 
