@@ -30,15 +30,23 @@ public class ProfiParser {
 
     private void initDriver() {
         if (driver == null) {
-            WebDriverManager.chromedriver().setup();
-
             ChromeOptions options = new ChromeOptions();
-            options.addArguments("--start-maximized");
-            options.addArguments("--disable-blink-features=AutomationControlled");
-            options.addArguments("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36");
+            options.addArguments(
+                    "--start-maximized",
+                    "--disable-blink-features=AutomationControlled",
+                    "--remote-allow-origins=*",
+                    "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
+            );
 
-            // Явное указание пути к Chrome (проверьте путь на вашей системе!)
-            options.setBinary("C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe");
+            if (System.getenv("INSIDE_DOCKER") != null) {
+                // Настройки для Docker
+                options.addArguments("--no-sandbox", "--disable-dev-shm-usage", "--headless");
+                options.setBinary("/usr/bin/google-chrome");
+            } else {
+                // Настройки для локального запуска
+                WebDriverManager.chromedriver().setup();
+                options.setBinary("C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe");
+            }
 
             driver = new ChromeDriver(options);
             wait = new WebDriverWait(driver, Duration.ofSeconds(20));
