@@ -13,5 +13,6 @@ public class ProfiOrder {
 
     private String title;
     private String price;
+    private String description;
 
 }

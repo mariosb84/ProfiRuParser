@@ -200,6 +200,7 @@ public class ProfiParser {
         By orderCardSelector = By.cssSelector("a[id^='7'][data-testid$='order-snippet']");
         By titleSelector = By.cssSelector(".SubjectAndPriceStyles__SubjectsText-sc-18v5hu8-1");
         By priceSelector = By.cssSelector(".SubjectAndPriceStyles__PriceValue-sc-18v5hu8-5");
+        By descriptionSelector = By.cssSelector(".SnippetBodyStyles__MainInfo-sc-tnih0-6");
 
         // Ожидание появления хотя бы одного заказа
         wait.until(ExpectedConditions.presenceOfElementLocated(orderCardSelector));
@@ -216,13 +217,19 @@ public class ProfiParser {
                 String title = item.findElement(titleSelector).getText();
                 String price = item.findElement(priceSelector).getText();
 
+                // Добавляем извлечение описания
+                String description = "";
+                try {
+                    description = item.findElement(descriptionSelector).getText();
+                } catch (NoSuchElementException e) {
+                    description = "Описание отсутствует";
+                }
 
                 // Фильтрация по ключевым словам (если searchQuery задан)
                 if (searchQuery == null || searchQuery.isEmpty() ||
                         title.toLowerCase().contains(searchQuery.toLowerCase())) {
-                    orders.add(new ProfiOrder(id, title, price));
+                    orders.add(new ProfiOrder(id, title, price, description));
                 }
-                //orders.add(new ProfiOrder(id, title, price));
 
             } catch (NoSuchElementException e) {
                 System.err.println("Не удалось извлечь данные заказа: " + e.getMessage());
