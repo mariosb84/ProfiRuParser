@@ -245,9 +245,13 @@ public class ProfiBot extends TelegramLongPollingBot {
     }
 
     private String formatOrder(ProfiOrder order) {
-        return "Заказ #" + order.getId() + "\n"
-                + "Название: " + order.getTitle() + "\n"
-                + "Цена: " + order.getPrice();
+        StringBuilder sb = new StringBuilder();
+        sb.append("Заказ #").append(order.getId()).append("\n");
+        sb.append("Название: ").append(order.getTitle()).append("\n");
+        sb.append("Цена: ").append(order.getPrice()).append("\n");
+        sb.append("Описание: ").append(order.getDescription());
+
+        return sb.toString();
     }
 
     private void handleCallback(CallbackQuery callbackQuery) {
