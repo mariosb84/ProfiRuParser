@@ -50,13 +50,20 @@ public class ProfiBot extends TelegramLongPollingBot {
         NONE,
         WAITING_FOR_USERNAME,
         WAITING_FOR_PASSWORD,
-        AUTHORIZED
+        AUTHORIZED,
+        WAITING_FOR_KEYWORD_1,
+        WAITING_FOR_KEYWORD_2,
+        WAITING_FOR_KEYWORD_3,
+        WAITING_FOR_KEYWORD_4,
+        WAITING_FOR_KEYWORD_5
     }
 
     // Для каждого chatId хранит состояние
     private final Map<Long, BotState> userStates = new HashMap<>();
     // Для временного хранения логина при вводе пароля
     private final Map<Long, String> tempLogins = new HashMap<>();
+
+    private final Map<Long, List<String>> userKeyWords = new HashMap<>();
 
     @Override
     public String getBotUsername() {
@@ -129,9 +136,6 @@ public class ProfiBot extends TelegramLongPollingBot {
                 }
                 return;
             }
-
-
-
             // Если авторизован, обрабатываем команды меню и остальной функционал
             if (state == BotState.AUTHORIZED) {
                 switch (messageText) {
@@ -145,31 +149,95 @@ public class ProfiBot extends TelegramLongPollingBot {
                     case "Настройки":
                         sendMessage(chatId, "Здесь будет логика настроек...");
                         break;
+
+                    case "Настройки ключевых слов":
+                        sendKeywordsMenu(chatId);
+                        break;
+                    case "Назад":
+                        sendMainMenu(chatId);
+                        break;
+                    case "Искать по всем ключам":
+                        searchByAllKeywords(chatId);
+                        break;
+                    case "Добавить ключ 1":
+                        sendMessage(chatId, "Введите первое ключевое слово:");
+                        userStates.put(chatId, BotState.WAITING_FOR_KEYWORD_1);
+                        break;
+                    case "Добавить ключ 2":
+                        sendMessage(chatId, "Введите второе ключевое слово:");
+                        userStates.put(chatId, BotState.WAITING_FOR_KEYWORD_2);
+                        break;
+                    case "Добавить ключ 3":
+                        sendMessage(chatId, "Введите третье ключевое слово:");
+                        userStates.put(chatId, BotState.WAITING_FOR_KEYWORD_3);
+                        break;
+                    case "Добавить ключ 4":
+                        sendMessage(chatId, "Введите четвертое ключевое слово:");
+                        userStates.put(chatId, BotState.WAITING_FOR_KEYWORD_4);
+                        break;
+                    case "Добавить ключ 5":
+                        sendMessage(chatId, "Введите пятое ключевое слово:");
+                        userStates.put(chatId, BotState.WAITING_FOR_KEYWORD_5);
+                        break;
+
                     case "Выйти":
                         userStates.put(chatId, BotState.NONE);
                         sendMessage(chatId, "Вы вышли из системы. Для повторной авторизации используйте /login");
                         break;
+
                     default:
+
+                        // Сначала проверяем, не вводится ли ключевое слово
+                        if (state == BotState.WAITING_FOR_KEYWORD_1) {
+                            saveKeyword(chatId, 0, messageText);
+                            userStates.put(chatId, BotState.AUTHORIZED);
+                            sendKeywordsMenu(chatId);
+                            return;
+                        } else if (state == BotState.WAITING_FOR_KEYWORD_2) {
+                            saveKeyword(chatId, 1, messageText);
+                            userStates.put(chatId, BotState.AUTHORIZED);
+                            sendKeywordsMenu(chatId);
+                            return;
+                        } else if (state == BotState.WAITING_FOR_KEYWORD_3) {
+                            saveKeyword(chatId, 2, messageText);
+                            userStates.put(chatId, BotState.AUTHORIZED);
+                            sendKeywordsMenu(chatId);
+                            return;
+                        } else if (state == BotState.WAITING_FOR_KEYWORD_4) {
+                            saveKeyword(chatId, 3, messageText);
+                            userStates.put(chatId, BotState.AUTHORIZED);
+                            sendKeywordsMenu(chatId);
+                            return;
+                        } else if (state == BotState.WAITING_FOR_KEYWORD_5) {
+                            saveKeyword(chatId, 4, messageText);
+                            userStates.put(chatId, BotState.AUTHORIZED);
+                            sendKeywordsMenu(chatId);
+                            return;
+                        }
+
                         // Если сообщение не из меню, запускаем текущий парсер как раньше
                         // Асинхронно запускаем парсинг
-                        executor.submit(() -> {
-                            try {
-                                parser.login(profiLogin, profiPassword);
-                                List<ProfiOrder> orders = parser.parseOrders(messageText);
-                                if (orders.isEmpty()) {
-                                    sendMessage(chatId, "По вашему запросу ничего не найдено.");
-                                } else {
-                                    orders.forEach(order -> sendOrderCard(chatId, order));
+                        else {
+                            executor.submit(() -> {
+                                try {
+                                    parser.login(profiLogin, profiPassword);
+                                    List<ProfiOrder> orders = parser.parseOrders(messageText);
+                                    if (orders.isEmpty()) {
+                                        sendMessage(chatId, "По вашему запросу ничего не найдено.");
+                                    } else {
+                                        orders.forEach(order -> sendOrderCard(chatId, order));
+                                    }
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                    sendMessage(chatId, "Произошла ошибка при поиске заказов.");
                                 }
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                                sendMessage(chatId, "Произошла ошибка при поиске заказов.");
-                            }
-                        });
+                            });
 
-                        break;
+                            break;
+                        }
                 }
-            } else {
+            }
+            else {
                 // На всякий случай, если состояние не AUTHORIZED, просим авторизоваться
                 sendMessage(chatId, "Пожалуйста, авторизуйтесь командой /login");
             }
@@ -194,6 +262,7 @@ public class ProfiBot extends TelegramLongPollingBot {
         KeyboardRow row1 = new KeyboardRow();
         row1.add(new KeyboardButton("Показать данные"));
         row1.add(new KeyboardButton("Настройки"));
+        row1.add(new KeyboardButton("Настройки ключевых слов"));
 
         KeyboardRow row2 = new KeyboardRow();
         row2.add(new KeyboardButton("Выйти"));
@@ -246,10 +315,16 @@ public class ProfiBot extends TelegramLongPollingBot {
 
     private String formatOrder(ProfiOrder order) {
         StringBuilder sb = new StringBuilder();
-        sb.append("Заказ #").append(order.getId()).append("\n");
-        sb.append("Название: ").append(order.getTitle()).append("\n");
-        sb.append("Цена: ").append(order.getPrice()).append("\n");
-        sb.append("Описание: ").append(order.getDescription());
+        sb.append("🆔 Заказ #").append(order.getId()).append("\n\n");
+        sb.append("📌 Название: ").append(order.getTitle()).append("\n\n");
+        sb.append("💰 Цена: ").append(order.getPrice()).append("\n\n");
+        sb.append("📝 Описание:\n").append(order.getDescription());
+
+        // Ограничим длину описания, если оно слишком длинное
+        if (sb.length() > 4000) { // Максимальная длина сообщения в Telegram
+            sb.setLength(4000 - 100); // Оставляем место для "..."
+            sb.append("...\n\n(сообщение сокращено)");
+        }
 
         return sb.toString();
     }
@@ -301,6 +376,92 @@ public class ProfiBot extends TelegramLongPollingBot {
     public void shutdown() {
         parser.close();
         executor.shutdown();
+    }
+
+    private void sendKeywordsMenu(Long chatId) {
+        List<String> keywords = userKeyWords.getOrDefault(chatId, new ArrayList<>());
+
+        SendMessage message = new SendMessage();
+        message.setChatId(chatId.toString());
+        message.setText("Текущие ключевые слова:\n" +
+                String.join("\n", keywords) +
+                "\n\nВыберите действие:");
+
+        ReplyKeyboardMarkup keyboardMarkup = new ReplyKeyboardMarkup();
+        keyboardMarkup.setResizeKeyboard(true);
+        keyboardMarkup.setOneTimeKeyboard(false);
+
+        List<KeyboardRow> keyboard = new ArrayList<>();
+
+        // Кнопки для добавления ключевых слов
+        for (int i = 1; i <= 5; i++) {
+            KeyboardRow row = new KeyboardRow();
+            row.add(new KeyboardButton("Добавить ключ " + i));
+            keyboard.add(row);
+        }
+
+        // Кнопка для поиска по всем ключам
+        KeyboardRow searchRow = new KeyboardRow();
+        searchRow.add(new KeyboardButton("Искать по всем ключам"));
+        keyboard.add(searchRow);
+
+        // Кнопка назад
+        KeyboardRow backRow = new KeyboardRow();
+        backRow.add(new KeyboardButton("Назад"));
+        keyboard.add(backRow);
+
+        keyboardMarkup.setKeyboard(keyboard);
+        message.setReplyMarkup(keyboardMarkup);
+
+        try {
+            execute(message);
+        } catch (TelegramApiException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void saveKeyword(Long chatId, int index, String keyword) {
+        List<String> keywords = userKeyWords.getOrDefault(chatId, new ArrayList<>());
+
+        // Убедимся, что список достаточно большой
+        while (keywords.size() <= index) {
+            keywords.add("");
+        }
+
+        keywords.set(index, keyword);
+        userKeyWords.put(chatId, keywords);
+        sendMessage(chatId, "Ключевое слово сохранено!");
+    }
+
+    private void searchByAllKeywords(Long chatId) {
+        List<String> keywords = userKeyWords.getOrDefault(chatId, new ArrayList<>());
+        if (keywords.isEmpty()) {
+            sendMessage(chatId, "У вас нет сохраненных ключевых слов.");
+            return;
+        }
+
+        executor.submit(() -> {
+            try {
+                parser.login(profiLogin, profiPassword);
+                Set<ProfiOrder> allOrders = new LinkedHashSet<>(); // Для избежания дубликатов
+
+                for (String keyword : keywords) {
+                    if (!keyword.isEmpty()) {
+                        List<ProfiOrder> orders = parser.parseOrders(keyword);
+                        allOrders.addAll(orders);
+                    }
+                }
+
+                if (allOrders.isEmpty()) {
+                    sendMessage(chatId, "По вашим ключевым словам ничего не найдено.");
+                } else {
+                    allOrders.forEach(order -> sendOrderCard(chatId, order));
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                sendMessage(chatId, "Произошла ошибка при поиске заказов.");
+            }
+        });
     }
 
 }
