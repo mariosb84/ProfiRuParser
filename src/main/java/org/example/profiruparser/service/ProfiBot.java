@@ -10,6 +10,7 @@ import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
+import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
@@ -77,170 +78,240 @@ public class ProfiBot extends TelegramLongPollingBot {
 
     @Override
     public void onUpdateReceived(Update update) {
-        if (update.hasCallbackQuery()) {
-            Long chatId = update.getCallbackQuery().getMessage().getChatId();
-            if (!isAuthorized(chatId)) {
-                sendMessage(chatId, "Пожалуйста, авторизуйтесь командой /login");
-                answerCallback(update.getCallbackQuery(), "Требуется авторизация");
-                return;
+        try {
+            // Логирование входящего update
+            System.out.println("\n=== NEW UPDATE RECEIVED ===");
+            System.out.println("Update ID: " + update.getUpdateId());
+            System.out.println("From: " + (update.hasMessage() ? update.getMessage().getFrom().getUserName() : "callback"));
+
+            if (update.hasCallbackQuery()) {
+                handleCallbackUpdate(update);
+            } else if (update.hasMessage() && update.getMessage().hasText()) {
+                handleTextMessage(update);
             }
-            handleCallback(update.getCallbackQuery());
-        } else if (update.hasMessage() && update.getMessage().hasText()) {
-            String messageText = update.getMessage().getText();
-            Long chatId = update.getMessage().getChatId();
+        } catch (Exception e) {
+            System.err.println("ERROR in onUpdateReceived: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
 
-            BotState state = userStates.getOrDefault(chatId, BotState.NONE);
+    private void handleCallbackUpdate(Update update) {
+        CallbackQuery callback = update.getCallbackQuery();
+        Long chatId = callback.getMessage().getChatId();
+        BotState state = userStates.getOrDefault(chatId, BotState.NONE);
 
-            if ("/start".equals(messageText)) {
-                sendMessage(chatId, "Добро пожаловать! Для начала работы авторизуйтесь командой /login");
+        System.out.println("[CALLBACK] ChatID: " + chatId);
+        System.out.println("Current state: " + state);
+        System.out.println("Callback data: " + callback.getData());
+
+        if (!isAuthorized(chatId)) {
+            System.out.println("User not authorized, rejecting callback");
+            sendMessage(chatId, "Пожалуйста, авторизуйтесь командой /login");
+            answerCallback(callback, "Требуется авторизация");
+            return;
+        }
+
+        handleCallback(callback);
+    }
+
+    private void handleTextMessage(Update update) {
+        Message message = update.getMessage();
+        String messageText = message.getText();
+        Long chatId = message.getChatId();
+        BotState state = userStates.getOrDefault(chatId, BotState.NONE);
+
+        System.out.println("\n[MESSAGE] ChatID: " + chatId);
+        System.out.println("Current state: " + state);
+        System.out.println("Message text: " + messageText);
+        System.out.println("User keywords: " + userKeyWords.getOrDefault(chatId, Collections.emptyList()));
+
+        // Обработка команды /start
+        if ("/start".equals(messageText)) {
+            System.out.println("Handling /start command");
+            handleStartCommand(chatId);
+            return;
+        }
+
+        // Сначала проверяем ввод ключевых слов
+        if (handleKeywordInput(chatId, state, messageText)) {
+            return;
+        }
+
+        // Обработка неавторизованных пользователей
+        if (!isAuthorized(chatId)) {
+            System.out.println("Handling unauthorized user");
+            handleUnauthorizedUser(chatId, state, messageText);
+            return;
+        }
+
+        // Обработка команд меню
+        if (state == BotState.AUTHORIZED) {
+            System.out.println("Handling authorized command");
+            handleAuthorizedCommands(chatId, messageText);
+            return;
+        }
+
+        System.out.println("Unexpected state, requesting auth");
+        sendMessage(chatId, "Пожалуйста, авторизуйтесь командой /login");
+    }
+
+    private void handleStartCommand(Long chatId) {
+        userStates.put(chatId, BotState.NONE);
+        tempLogins.remove(chatId);
+        sendMessage(chatId, "Добро пожаловать! Для начала работы авторизуйтесь командой /login");
+        System.out.println("Reset state to NONE for chat: " + chatId);
+    }
+
+    private void handleUnauthorizedUser(Long chatId, BotState state, String messageText) {
+        switch (state) {
+            case NONE:
+                if ("/login".equals(messageText)) {
+                    System.out.println("Starting login process");
+                    userStates.put(chatId, BotState.WAITING_FOR_USERNAME);
+                    sendMessage(chatId, "Введите логин:");
+                } else {
+                    sendMessage(chatId, "Пожалуйста, авторизуйтесь командой /login");
+                }
+                break;
+
+            case WAITING_FOR_USERNAME:
+                System.out.println("Received username: " + messageText);
+                tempLogins.put(chatId, messageText.trim());
+                userStates.put(chatId, BotState.WAITING_FOR_PASSWORD);
+                sendMessage(chatId, "Введите пароль:");
+                break;
+
+            case WAITING_FOR_PASSWORD:
+                String login = tempLogins.get(chatId);
+                System.out.println("Received password for login: " + login);
+
+                if (profiLogin.equals(login) && profiPassword.equals(messageText.trim())) {
+                    System.out.println("Login successful");
+                    userStates.put(chatId, BotState.AUTHORIZED);
+                    tempLogins.remove(chatId);
+                    sendMessage(chatId, "Авторизация прошла успешно!");
+                    sendMainMenu(chatId);
+                } else {
+                    System.out.println("Invalid credentials");
+                    sendMessage(chatId, "Неверный логин или пароль. Попробуйте снова.\nВведите логин:");
+                    userStates.put(chatId, BotState.WAITING_FOR_USERNAME);
+                }
+                break;
+
+            default:
+                sendMessage(chatId, "Пожалуйста, авторизуйтесь командой /login");
                 userStates.put(chatId, BotState.NONE);
-                tempLogins.remove(chatId);
-                return;
-            }
+                break;
+        }
+    }
 
-            if (!isAuthorized(chatId)) {
-                // Если пользователь не авторизован, обрабатываем команды авторизации
-                switch (state) {
-                    case NONE:
-                        if ("/login".equals(messageText)) {
-                            sendMessage(chatId, "Введите логин:");
-                            userStates.put(chatId, BotState.WAITING_FOR_USERNAME);
+    private boolean handleKeywordInput(Long chatId, BotState state, String messageText) {
+        switch (state) {
+            case WAITING_FOR_KEYWORD_1:
+                System.out.println("Saving keyword 1: " + messageText);
+                saveKeyword(chatId, 0, messageText);
+                userStates.put(chatId, BotState.AUTHORIZED);
+                sendKeywordsMenu(chatId);
+                return true;
+
+            case WAITING_FOR_KEYWORD_2:
+                System.out.println("Saving keyword 2: " + messageText);
+                saveKeyword(chatId, 1, messageText);
+                userStates.put(chatId, BotState.AUTHORIZED);
+                sendKeywordsMenu(chatId);
+                return true;
+
+            case WAITING_FOR_KEYWORD_3:
+                System.out.println("Saving keyword 3: " + messageText);
+                saveKeyword(chatId, 2, messageText);
+                userStates.put(chatId, BotState.AUTHORIZED);
+                sendKeywordsMenu(chatId);
+                return true;
+
+            case WAITING_FOR_KEYWORD_4:
+                System.out.println("Saving keyword 4: " + messageText);
+                saveKeyword(chatId, 3, messageText);
+                userStates.put(chatId, BotState.AUTHORIZED);
+                sendKeywordsMenu(chatId);
+                return true;
+
+            case WAITING_FOR_KEYWORD_5:
+                System.out.println("Saving keyword 5: " + messageText);
+                saveKeyword(chatId, 4, messageText);
+                userStates.put(chatId, BotState.AUTHORIZED);
+                sendKeywordsMenu(chatId);
+                return true;
+        }
+        return false;
+    }
+
+    private void handleAuthorizedCommands(Long chatId, String messageText) {
+        System.out.println("Processing command: " + messageText);
+
+        switch (messageText) {
+            case "/login":
+                sendMessage(chatId, "Вы уже авторизованы.");
+                sendMainMenu(chatId);
+                break;
+
+            case "Настройки ключевых слов":
+                System.out.println("Showing keywords menu");
+                sendKeywordsMenu(chatId);
+                break;
+
+            case "Добавить ключ 1":
+                System.out.println("Preparing to receive keyword 1");
+                userStates.put(chatId, BotState.WAITING_FOR_KEYWORD_1);
+                sendMessage(chatId, "Введите первое ключевое слово:");
+                break;
+
+            case "Добавить ключ 2":
+                System.out.println("Preparing to receive keyword 2");
+                userStates.put(chatId, BotState.WAITING_FOR_KEYWORD_2);
+                sendMessage(chatId, "Введите второе ключевое слово:");
+                break;
+
+            case "Добавить ключ 3":
+                System.out.println("Preparing to receive keyword 3");
+                userStates.put(chatId, BotState.WAITING_FOR_KEYWORD_3);
+                sendMessage(chatId, "Введите третье ключевое слово:");
+                break;
+
+            case "Добавить ключ 4":
+                System.out.println("Preparing to receive keyword 4");
+                userStates.put(chatId, BotState.WAITING_FOR_KEYWORD_4);
+                sendMessage(chatId, "Введите четвертое ключевое слово:");
+                break;
+
+            case "Добавить ключ 5":
+                System.out.println("Preparing to receive keyword 5");
+                userStates.put(chatId, BotState.WAITING_FOR_KEYWORD_5);
+                sendMessage(chatId, "Введите пятое ключевое слово:");
+                break;
+
+            case "Искать по всем ключам":
+                System.out.println("Searching by all keywords: " +
+                        userKeyWords.getOrDefault(chatId, Collections.emptyList()));
+                searchByAllKeywords(chatId);
+                break;
+
+            default:
+                System.out.println("Parsing message as search query");
+                executor.submit(() -> {
+                    try {
+                        parser.login(profiLogin, profiPassword);
+                        List<ProfiOrder> orders = parser.parseOrders(messageText);
+                        if (orders.isEmpty()) {
+                            sendMessage(chatId, "По вашему запросу ничего не найдено.");
                         } else {
-                            sendMessage(chatId, "Пожалуйста, авторизуйтесь командой /login");
+                            orders.forEach(order -> sendOrderCard(chatId, order));
                         }
-                        break;
-                    case WAITING_FOR_USERNAME:
-                        tempLogins.put(chatId, messageText.trim());
-                        sendMessage(chatId, "Введите пароль:");
-                        userStates.put(chatId, BotState.WAITING_FOR_PASSWORD);
-                        break;
-                    case WAITING_FOR_PASSWORD:
-                        String login = tempLogins.get(chatId);
-                        String password = messageText.trim();
-
-                        if (profiLogin.equals(login) && profiPassword.equals(password)) {
-                            userStates.put(chatId, BotState.AUTHORIZED);
-                            tempLogins.remove(chatId);
-                            sendMessage(chatId, "Авторизация прошла успешно!");
-                            sendMainMenu(chatId);
-
-                        } else {
-                            sendMessage(chatId, "Неверный логин или пароль. Попробуйте снова.\nВведите логин:");
-                            userStates.put(chatId, BotState.WAITING_FOR_USERNAME);
-                        }
-                        break;
-                    default:
-                        sendMessage(chatId, "Пожалуйста, авторизуйтесь командой /login");
-                        userStates.put(chatId, BotState.NONE);
-                        break;
-                }
-                return;
-            }
-            // Если авторизован, обрабатываем команды меню и остальной функционал
-            if (state == BotState.AUTHORIZED) {
-                switch (messageText) {
-                    case "/login":
-                        sendMessage(chatId, "Вы уже авторизованы.");
-                        sendMainMenu(chatId);
-                        break;
-                    case "Показать данные":
-                        sendMessage(chatId, "Здесь будет логика показа данных...");
-                        break;
-                    case "Настройки":
-                        sendMessage(chatId, "Здесь будет логика настроек...");
-                        break;
-
-                    case "Настройки ключевых слов":
-                        sendKeywordsMenu(chatId);
-                        break;
-                    case "Назад":
-                        sendMainMenu(chatId);
-                        break;
-                    case "Искать по всем ключам":
-                        searchByAllKeywords(chatId);
-                        break;
-                    case "Добавить ключ 1":
-                        sendMessage(chatId, "Введите первое ключевое слово:");
-                        userStates.put(chatId, BotState.WAITING_FOR_KEYWORD_1);
-                        break;
-                    case "Добавить ключ 2":
-                        sendMessage(chatId, "Введите второе ключевое слово:");
-                        userStates.put(chatId, BotState.WAITING_FOR_KEYWORD_2);
-                        break;
-                    case "Добавить ключ 3":
-                        sendMessage(chatId, "Введите третье ключевое слово:");
-                        userStates.put(chatId, BotState.WAITING_FOR_KEYWORD_3);
-                        break;
-                    case "Добавить ключ 4":
-                        sendMessage(chatId, "Введите четвертое ключевое слово:");
-                        userStates.put(chatId, BotState.WAITING_FOR_KEYWORD_4);
-                        break;
-                    case "Добавить ключ 5":
-                        sendMessage(chatId, "Введите пятое ключевое слово:");
-                        userStates.put(chatId, BotState.WAITING_FOR_KEYWORD_5);
-                        break;
-
-                    case "Выйти":
-                        userStates.put(chatId, BotState.NONE);
-                        sendMessage(chatId, "Вы вышли из системы. Для повторной авторизации используйте /login");
-                        break;
-
-                    default:
-
-                        // Сначала проверяем, не вводится ли ключевое слово
-                        if (state == BotState.WAITING_FOR_KEYWORD_1) {
-                            saveKeyword(chatId, 0, messageText);
-                            userStates.put(chatId, BotState.AUTHORIZED);
-                            sendKeywordsMenu(chatId);
-                            return;
-                        } else if (state == BotState.WAITING_FOR_KEYWORD_2) {
-                            saveKeyword(chatId, 1, messageText);
-                            userStates.put(chatId, BotState.AUTHORIZED);
-                            sendKeywordsMenu(chatId);
-                            return;
-                        } else if (state == BotState.WAITING_FOR_KEYWORD_3) {
-                            saveKeyword(chatId, 2, messageText);
-                            userStates.put(chatId, BotState.AUTHORIZED);
-                            sendKeywordsMenu(chatId);
-                            return;
-                        } else if (state == BotState.WAITING_FOR_KEYWORD_4) {
-                            saveKeyword(chatId, 3, messageText);
-                            userStates.put(chatId, BotState.AUTHORIZED);
-                            sendKeywordsMenu(chatId);
-                            return;
-                        } else if (state == BotState.WAITING_FOR_KEYWORD_5) {
-                            saveKeyword(chatId, 4, messageText);
-                            userStates.put(chatId, BotState.AUTHORIZED);
-                            sendKeywordsMenu(chatId);
-                            return;
-                        }
-
-                        // Если сообщение не из меню, запускаем текущий парсер как раньше
-                        // Асинхронно запускаем парсинг
-                        else {
-                            executor.submit(() -> {
-                                try {
-                                    parser.login(profiLogin, profiPassword);
-                                    List<ProfiOrder> orders = parser.parseOrders(messageText);
-                                    if (orders.isEmpty()) {
-                                        sendMessage(chatId, "По вашему запросу ничего не найдено.");
-                                    } else {
-                                        orders.forEach(order -> sendOrderCard(chatId, order));
-                                    }
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                    sendMessage(chatId, "Произошла ошибка при поиске заказов.");
-                                }
-                            });
-
-                            break;
-                        }
-                }
-            }
-            else {
-                // На всякий случай, если состояние не AUTHORIZED, просим авторизоваться
-                sendMessage(chatId, "Пожалуйста, авторизуйтесь командой /login");
-            }
+                    } catch (Exception e) {
+                        System.err.println("Search error: " + e.getMessage());
+                        sendMessage(chatId, "Произошла ошибка при поиске заказов.");
+                    }
+                });
+                break;
         }
     }
 
