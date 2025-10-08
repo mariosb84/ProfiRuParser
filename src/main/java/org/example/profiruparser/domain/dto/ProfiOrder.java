@@ -14,5 +14,8 @@ public class ProfiOrder {
     private String title;
     private String price;
     private String description;
+    private String creationTime;
+    private String clientName;
+    private String orderNumber;
 
 }

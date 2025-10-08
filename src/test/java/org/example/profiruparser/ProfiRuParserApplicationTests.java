@@ -9,5 +9,4 @@ class ProfiRuParserApplicationTests {
     @Test
     void contextLoads() {
     }
-
 }

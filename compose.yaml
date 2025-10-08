@@ -1,21 +1,38 @@
+version: '3.8'
 services:
-  mongodb:
-    image: 'mongo:latest'
-    environment:
-      - 'MONGO_INITDB_DATABASE=mydatabase'
-      - 'MONGO_INITDB_ROOT_PASSWORD=secret'
-      - 'MONGO_INITDB_ROOT_USERNAME=root'
-    ports:
-      - '27017'
   postgres:
-    image: 'postgres:latest'
+    image: postgres:13
     environment:
-      - 'POSTGRES_DB=mydatabase'
-      - 'POSTGRES_PASSWORD=secret'
-      - 'POSTGRES_USER=myuser'
+      - POSTGRES_DB=profi_bot_auth
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=SB14041984sb
     ports:
-      - '5432'
-  redis:
-    image: 'redis:latest'
+      - "5432:5432"  # Проброс порта на хост для IDEA
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - profi-network
+
+  profi-app:
+    #build: .   # ← ЭТО УБРАТЬ!
+    image: profi-app:latest  # ← ЭТО ДОБАВИТЬ!
     ports:
-      - '6379'
+      - "9900:9900"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/profi_bot_auth
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=SB14041984sb
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - INSIDE_DOCKER=true
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    networks:
+      - profi-network
+
+volumes:
+  postgres_data:
+
+networks:
+  profi-network:
+    driver: bridge

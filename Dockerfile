@@ -1,23 +1,21 @@
 # Используем официальный образ Java 17
 FROM eclipse-temurin:17-jdk-jammy
 
-# Установка Chrome
-RUN apt-get update && apt-get install -y wget && \
-    wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && \
-    apt-get install -y ./google-chrome-stable_current_amd64.deb && \
-    rm google-chrome-stable_current_amd64.deb
+# Установка Chrome и зависимостей
+RUN apt-get update && apt-get install -y wget gnupg && \
+    wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add - && \
+    echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list && \
+    apt-get update && apt-get install -y google-chrome-stable && \
+    rm -rf /var/lib/apt/lists/*
 
-# 1. Устанавливаем рабочую директорию
+# Устанавливаем рабочую директорию
 WORKDIR /app
 
-# 2. Копируем JAR-файл в контейнер
+# Копируем JAR-файл в контейнер
 COPY target/*.jar app.jar
 
-# Флаг для детекта контейнера
-ENV INSIDE_DOCKER=true
+# Открываем порт приложения
+EXPOSE 9900
 
-# 3. Открываем порт приложения
-EXPOSE 8080
-
-# 4. Команда запуска
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Команда запуска с профилем Docker
+ENTRYPOINT ["java", "-jar", "app.jar", "--spring.profiles.active=docker"]

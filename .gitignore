@@ -31,3 +31,12 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Archives and binary files ###
+profi-app.tar
+*.tar
+*.tar.gz
+*.jar
+*.war
+*.ear
+*.zip

@@ -2,10 +2,10 @@ package org.example.profiruparser.service;
 
 import io.github.bonigarcia.wdm.WebDriverManager;
 import org.example.profiruparser.domain.dto.ProfiOrder;
+import org.example.profiruparser.errors.LoginException;
 import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
-import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
@@ -15,19 +15,20 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
+/**
+ * Парсер заказов с сайта Profi.ru
+ */
 public class ProfiParser {
     private WebDriver driver;
     private WebDriverWait wait;
     private boolean loggedIn = false;
 
-    public ProfiParser() {
-        // Инициализация драйвера вынесена из конструктора
-
-    }
-
+    /**
+     * Инициализирует WebDriver с настройками
+     */
     private void initDriver() {
         if (driver == null) {
             ChromeOptions options = new ChromeOptions();
@@ -35,372 +36,589 @@ public class ProfiParser {
                     "--start-maximized",
                     "--disable-blink-features=AutomationControlled",
                     "--remote-allow-origins=*",
+                    "--disable-notifications",
                     "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
             );
 
             if (System.getenv("INSIDE_DOCKER") != null) {
-                // Настройки для Docker
                 options.addArguments("--no-sandbox", "--disable-dev-shm-usage", "--headless");
                 options.setBinary("/usr/bin/google-chrome");
             } else {
-                // Настройки для локального запуска
                 WebDriverManager.chromedriver().setup();
                 options.setBinary("C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe");
             }
 
             driver = new ChromeDriver(options);
+            driver.manage().timeouts().implicitlyWait(3, TimeUnit.SECONDS);
             wait = new WebDriverWait(driver, Duration.ofSeconds(20));
         }
     }
 
-    public void login(String login, String password) throws Exception {
-        initDriver();
-        String loginUrl = "https://profi.ru/backoffice/a.php";
-        driver.get(loginUrl);
-
-        try {
-            // Проверка капчи
-            if (isCaptchaPresent()) {
-                handleCaptcha();
-            }
-
-            // Ввод логина
-            WebElement loginInput = wait.until(ExpectedConditions.visibilityOfElementLocated(
-                    By.cssSelector("input.login-form__input-login")));
-            humanType(loginInput, login);
-
-            // Ввод пароля
-            WebElement passwordInput = wait.until(ExpectedConditions.visibilityOfElementLocated(
-                    By.cssSelector("input.login-form__input-password")));
-            humanType(passwordInput, password);
-
-            // Проверка капчи после ввода
-            if (isCaptchaPresent()) {
-                handleCaptcha();
-            }
-
-            // Клик по кнопке входа
-            WebElement submitButton = wait.until(ExpectedConditions.elementToBeClickable(
-                    By.cssSelector("a.ButtonsContainer__SubmitButton-sc-1bmmrie-5")));
-            ((JavascriptExecutor) driver).executeScript("arguments[0].click();", submitButton);
-
-            // Ожидание успешного входа по изменению контента страницы
-            wait.until(ExpectedConditions.or(
-                    // Вариант 1: Появление аватара пользователя
-                    ExpectedConditions.visibilityOfElementLocated(By.cssSelector(".user-avatar")),
-
-                    // Вариант 2: Исчезновение формы входа
-                    ExpectedConditions.invisibilityOfElementLocated(By.cssSelector(".login-form")),
-
-                    // Вариант 3: Появление элементов главной страницы
-                    ExpectedConditions.visibilityOfElementLocated(
-                            By.cssSelector(".search-form, .order-card, .TaskCard_taskCard__uP7Hp"))
-            ));
-
-            // Дополнительная проверка: если URL не изменился, но контент обновился
-            if (driver.getCurrentUrl().equals(loginUrl)) {
-                System.out.println("URL не изменился, но контент страницы обновлен. Авторизация успешна.");
-            }
-
-            loggedIn = true;
-
-            // Закрываем возможные всплывающие окна
-            closeWelcomePopupIfPresent();
-
-            // Переходим на вкладку заказов
-            navigateToOrdersPage();
-
-            // Дополнительная проверка
-            if (!isOrdersPageActive()) {
-                throw new Exception("Вкладка 'Заказы' не стала активной после перехода");
-            }
-
-        } catch (Exception e) {
-            saveDebugInfo("login_error");
-            throw e;
-        }
-    }
-
-    private WebElement findLoginButton() {
-        try {
-            // Попытка 1: По тексту кнопки
-            return wait.until(ExpectedConditions.elementToBeClickable(
-                    By.xpath("//button[contains(., 'Войти') or contains(., 'Sign in')]")));
-        } catch (TimeoutException e) {
-            try {
-                // Попытка 2: По классу
-                return wait.until(ExpectedConditions.elementToBeClickable(
-                        By.cssSelector("button[type='submit'], input[type='submit']")));
-            } catch (TimeoutException ex) {
-                // Попытка 3: По ID или другим атрибутам
-                return wait.until(ExpectedConditions.elementToBeClickable(
-                        By.cssSelector("#login-button, [data-test-id='login-button']")));
-            }
-        }
-    }
-
-    private boolean isCaptchaPresent() {
-        try {
-            return !driver.findElements(By.cssSelector(".captcha-container, iframe[src*='captcha']")).isEmpty();
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-    private void handleCaptcha() throws InterruptedException {
-        System.out.println("Обнаружена CAPTCHA! Требуется ручной ввод");
-        // Здесь можно добавить уведомление в Telegram
-        sendTelegramAlert("Обнаружена CAPTCHA! Требуется ручной ввод");
-
-        // Ожидание 2 минуты для ручного ввода
-        Thread.sleep(120000);
-
-        // Проверка, исчезла ли капча
-        if (isCaptchaPresent()) {
-            throw new RuntimeException("CAPTCHA не была решена в течение 2 минут");
-        }
-    }
-
-    private void saveDebugInfo(String prefix) {
-        try {
-            // Сохранение HTML страницы
-            String pageSource = driver.getPageSource();
-            Files.write(Path.of(prefix + "_page.html"), pageSource.getBytes());
-
-            // Сохранение скриншота
-            byte[] screenshot = ((TakesScreenshot) driver).getScreenshotAs(OutputType.BYTES);
-            Files.write(Path.of(prefix + "_screenshot.png"), screenshot);
-        } catch (Exception e) {
-            System.err.println("Не удалось сохранить отладочную информацию: " + e.getMessage());
-        }
-    }
-
-    private void sendTelegramAlert(String message) {
-        // Реализуйте отправку сообщения в Telegram
-        // Это можно сделать через ваш ProfiBot или отдельно
-        System.out.println("ALERT: " + message);
-    }
-
-    public List<ProfiOrder> parseOrders(String searchQuery) throws Exception {
+    /**
+     * Парсит заказы по ключевому слову
+     */
+    public List<ProfiOrder> parseOrders(String keyword) throws Exception {
         if (!loggedIn) {
-            throw new IllegalStateException("Не выполнен вход. Сначала вызовите login()");
+            throw new IllegalStateException("Требуется авторизация");
         }
 
-        // Если мы уже на странице заказов, не нужно переходить снова
-        if (!isOrdersPageActive()) {
-            navigateToOrdersPage();
+        try {
+            return parseOrdersMain(keyword);
+        } catch (Exception e) {
+            System.err.println("Main search failed, trying alternative: " + e.getMessage());
+            return parseOrdersAlternative(keyword);
+        }
+    }
+
+    /**
+     * Основной метод поиска через UI
+     */
+    private List<ProfiOrder> parseOrdersMain(String keyword) throws Exception {
+        System.out.println("=== STARTING UI SEARCH FOR: '" + keyword + "' ===");
+
+        driver.get("https://profi.ru/backoffice/n.php");
+        Thread.sleep(3000);
+        saveFullPageInfo("before_search");
+
+        // 1. Кликаем на кнопку поиска - поле ввода СТАНЕТ активным
+        WebElement searchButton = findSearchButton();
+        System.out.println("Found search button, clicking...");
+        ((JavascriptExecutor) driver).executeScript("arguments[0].click();", searchButton);
+        Thread.sleep(2000);
+
+        // 2. Поле ввода УЖЕ активно - используем его сразу
+        WebElement searchInput = driver.findElement(By.cssSelector(
+                "input[data-testid='fulltext_edit_mode_test_id'], #searchField-1, .SearchFieldStyles__SearchInput-sc-10dn6mx-6"
+        ));
+        System.out.println("Found active search input");
+
+        // 3. Пробуем оба варианта поиска
+        boolean searchPerformed = false;
+
+        // Вариант A: Пробуем найти и кликнуть на элемент истории
+        try {
+            WebElement historyItem = findSearchHistoryItem(keyword);
+            System.out.println("Found history item, clicking...");
+            historyItem.click();
+            searchPerformed = true;
+            System.out.println("✅ Search via history selection");
+        } catch (Exception e) {
+            System.out.println("History item not found, trying manual input...");
         }
 
-        // Если есть поисковый запрос, добавляем его к URL
-        if (searchQuery != null && !searchQuery.trim().isEmpty()) {
-            driver.get("https://profi.ru/backoffice/n.php?query=" + URLEncoder.encode(searchQuery, StandardCharsets.UTF_8));
+        // Вариант B: Если не нашли в истории, вводим вручную
+        if (!searchPerformed) {
+            System.out.println("Typing manually...");
+
+            // Очищаем и вводим текст
+            searchInput.clear();
+            Thread.sleep(500);
+            searchInput.sendKeys(keyword);
+            Thread.sleep(1000);
+
+            // Нажимаем Enter
+            searchInput.sendKeys(Keys.ENTER);
+            searchPerformed = true;
+            System.out.println("✅ Search via manual input + Enter");
         }
 
-        // Новые локаторы для Profi.ru
-        By orderCardSelector = By.cssSelector("a[id^='7'][data-testid$='order-snippet']");
-        By titleSelector = By.cssSelector(".SubjectAndPriceStyles__SubjectsText-sc-18v5hu8-1");
-        By priceSelector = By.cssSelector(".SubjectAndPriceStyles__PriceValue-sc-18v5hu8-5");
-        By descriptionSelector = By.cssSelector(".SnippetBodyStyles__MainInfo-sc-tnih0-6");
+        // 4. Ждем загрузки результатов
+        System.out.println("Waiting for search results...");
+        Thread.sleep(5000);
+        waitForSearchResults();
 
-        // Ожидание появления хотя бы одного заказа
-        wait.until(ExpectedConditions.presenceOfElementLocated(orderCardSelector));
+        saveFullPageInfo("after_search");
 
-        // Имитация человеческого поведения
-        humanScroll();
+        List<WebElement> cards = driver.findElements(By.cssSelector("a[data-testid$='_order-snippet']"));
+        System.out.println("Total cards found: " + cards.size());
 
-        List<WebElement> items = driver.findElements(orderCardSelector);
-        List<ProfiOrder> orders = new ArrayList<>();
+        scrollPage();
+        return extractOrders(keyword);
+    }
 
-        for (WebElement item : items) {
+    /**
+     * Ищет элемент в истории поиска по тексту
+     */
+    private WebElement findSearchHistoryItem(String keyword) {
+        // Ищем элементы истории
+        List<WebElement> historyItems = driver.findElements(By.cssSelector(
+                "[data-testid='suggest_view'] .CellStyles__Text-sc-4tqx95-4"
+        ));
+
+        for (WebElement item : historyItems) {
+            String itemText = item.getText().toLowerCase();
+            if (itemText.contains(keyword.toLowerCase())) {
+                System.out.println("Found history item: " + item.getText());
+                return item;
+            }
+        }
+        throw new NoSuchElementException("Search history item not found for: " + keyword);
+    }
+
+    /**
+     * Ждет завершения поиска
+     */
+    private void waitForSearchResults() throws InterruptedException {
+        // Ждем либо появления индикатора загрузки, либо его исчезновения
+        for (int i = 0; i < 10; i++) {
             try {
-                String id = item.getAttribute("id");
-                String title = item.findElement(titleSelector).getText();
-                String price = item.findElement(priceSelector).getText();
-
-                // Добавляем извлечение описания
-                String description = "";
-                try {
-                    description = item.findElement(descriptionSelector).getText();
-                } catch (NoSuchElementException e) {
-                    description = "Описание отсутствует";
+                // Проверяем есть ли индикатор загрузки
+                boolean isLoading = !driver.findElements(By.cssSelector("[class*='loading'], [class*='spinner']")).isEmpty();
+                if (!isLoading) {
+                    System.out.println("Search completed");
+                    return;
                 }
+            } catch (Exception e) {
+                // ignore
+            }
+            Thread.sleep(1000);
+        }
+        System.out.println("Search timeout, continuing...");
+    }
 
-                // Фильтрация по ключевым словам (если searchQuery задан)
-                if (searchQuery == null || searchQuery.isEmpty() ||
-                        title.toLowerCase().contains(searchQuery.toLowerCase())) {
-                    orders.add(new ProfiOrder(id, title, price, description));
+    /**
+     * Ищет кнопку поиска
+     */
+    private WebElement findSearchButton() {
+        String[] selectors = {
+                "button[data-testid='fulltext_view_mode_test_id']",
+                ".SearchFieldStyles__ViewStateBlock-sc-10dn6mx-4",
+                "[class*='search'] button",
+                "button[aria-label*='поиск']",
+                "button[aria-label*='заказ']"
+        };
+
+        for (String selector : selectors) {
+            try {
+                WebElement element = driver.findElement(By.cssSelector(selector));
+                if (element.isDisplayed()) {
+                    System.out.println("Found search button with selector: " + selector);
+                    return element;
                 }
+            } catch (Exception e) {
+                // continue
+            }
+        }
+        throw new NoSuchElementException("Search button not found");
+    }
 
-            } catch (NoSuchElementException e) {
-                System.err.println("Не удалось извлечь данные заказа: " + e.getMessage());
+    /**
+     * Альтернативный метод поиска через URL
+     */
+    private List<ProfiOrder> parseOrdersAlternative(String keyword) throws Exception {
+        System.out.println("=== USING ALTERNATIVE SEARCH ===");
+
+        String encodedKeyword = URLEncoder.encode(keyword, StandardCharsets.UTF_8.toString());
+        String searchUrl = "https://profi.ru/backoffice/n.php?q=" + encodedKeyword;
+
+        System.out.println("Alternative search URL: " + searchUrl);
+        driver.get(searchUrl);
+        Thread.sleep(8000);
+
+        saveFullPageInfo("alternative_search");
+
+        List<WebElement> cards = driver.findElements(By.cssSelector("a[data-testid$='_order-snippet']"));
+        System.out.println("Cards found with alternative search: " + cards.size());
+
+        scrollPage();
+        return extractOrders(keyword);
+    }
+
+    /**
+     * Извлекает заказы со страницы
+     */
+    private List<ProfiOrder> extractOrders(String keyword) {
+        List<ProfiOrder> orders = new ArrayList<>();
+        String lowerKeyword = keyword.toLowerCase();
+
+        System.out.println("=== EXTRACTING ORDERS ===");
+        System.out.println("Search keyword: " + keyword);
+
+        List<WebElement> cards = driver.findElements(By.cssSelector("a[data-testid$='_order-snippet']"));
+        System.out.println("Total cards to process: " + cards.size());
+
+        for (int i = 0; i < cards.size(); i++) {
+            try {
+                WebElement card = cards.get(i);
+
+                // Прокручиваем к карточке
+                ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView({block: 'center'});", card);
+                Thread.sleep(100);
+
+                if (!card.isDisplayed()) continue;
+
+                String title = extractTitle(card);
+                if (title.isEmpty()) continue;
+
+                String lowerTitle = title.toLowerCase();
+                boolean matches = lowerTitle.contains(lowerKeyword) ||
+                        matchesKeywordVariations(title, keyword);
+
+                System.out.println("Card " + i + ": '" + title + "' - matches: " + matches);
+
+                if (matches) {
+                    ProfiOrder order = new ProfiOrder();
+                    order.setId(card.getAttribute("id") != null ? card.getAttribute("id") : "id_" + i);
+                    order.setTitle(title);
+                    order.setPrice(extractPrice(card));
+                    order.setDescription(extractDescription(card));
+                    order.setCreationTime(extractCreationTime(card));
+
+                    orders.add(order);
+                    System.out.println("✅ ADDED: " + title + " | Time: " + order.getCreationTime());
+                }
+            } catch (Exception e) {
+                System.err.println("Error processing card " + i + ": " + e.getMessage());
             }
         }
 
+        System.out.println("=== EXTRACTION COMPLETE ===");
+        System.out.println("Found " + orders.size() + " matching orders");
+
+        // Сортируем заказы по дате (новые первыми)
+        orders.sort((o1, o2) -> {
+            try {
+                long minutes1 = parseTimeToMinutes(o1.getCreationTime());
+                long minutes2 = parseTimeToMinutes(o2.getCreationTime());
+
+                // Для "вчера" и старых дат - инвертируем сортировку
+                if (minutes1 > 24 * 60 && minutes2 > 24 * 60) {
+                    // Оба заказа "вчера" или старше - сортируем по убыванию (новые первыми)
+                    return Long.compare(minutes2, minutes1);
+                } else {
+                    // Обычные заказы (сегодня) - сортируем по возрастанию
+                    return Long.compare(minutes1, minutes2);
+                }
+            } catch (Exception e) {
+                return 0;
+            }
+        });
+
+        System.out.println("=== EXTRACTION COMPLETE ===");
+        System.out.println("Found " + orders.size() + " matching orders");
         return orders;
     }
 
-    private void humanScroll() throws InterruptedException {
-        JavascriptExecutor js = (JavascriptExecutor) driver;
-        long height = (Long) js.executeScript("return document.body.scrollHeight");
+    /**
+     * Сравнивает строки времени для сортировки
+     */
+    private int compareTimeStrings(String time1, String time2) {
+        // Приводим к минутам для сравнения
+        long minutes1 = parseTimeToMinutes(time1);
+        long minutes2 = parseTimeToMinutes(time2);
+        return Long.compare(minutes1, minutes2);
+    }
 
-        // Плавный скроллинг в несколько этапов
-        for (int i = 1; i <= 3; i++) {
-            js.executeScript("window.scrollTo(0, " + (height * i / 3) + ")");
-            Thread.sleep(1000 + (long)(Math.random() * 1000));
+    /**
+     * Парсит строку времени в минуты (для сортировки)
+     */
+    private long parseTimeToMinutes(String time) {
+        if (time == null || time.equals("Неизвестно")) {
+            return Long.MAX_VALUE;
+        }
+
+        String lowerTime = time.toLowerCase();
+
+        if (lowerTime.contains("только что")) {
+            return 0;
+        } else if (lowerTime.contains("минут")) {
+            return Integer.parseInt(lowerTime.replaceAll("[^0-9]", ""));
+        } else if (lowerTime.contains("час")) {
+            int hours = Integer.parseInt(lowerTime.replaceAll("[^0-9]", ""));
+            return hours * 60L;
+        } else if (lowerTime.contains("вчера")) {
+            // Для "Вчера в HH:MM" - считаем как 24 часа + время
+            return 24 * 60 + parseYesterdayTime(lowerTime);
+        } else {
+            return Long.MAX_VALUE;
         }
     }
 
-    private void humanType(WebElement element, String text) throws InterruptedException {
-        for (char c : text.toCharArray()) {
-            element.sendKeys(String.valueOf(c));
-            Thread.sleep(50 + (long)(Math.random() * 100));
-        }
-    }
-
-    private void humanClick(WebElement element) throws InterruptedException {
+    /**
+     * Парсит время для формата "Вчера в HH:MM"
+     */
+    private int parseYesterdayTime(String time) {
         try {
-            // Плавное перемещение к элементу
-            new Actions(driver)
-                    .moveToElement(element)
-                    .pause(Duration.ofMillis(200))
-                    .perform();
+            // Извлекаем время типа "21:12"
+            String timePart = time.replace("вчера в", "").trim();
 
-            // Небольшая случайная задержка перед кликом
-            Thread.sleep(200 + (long)(Math.random() * 300));
+            // Убираем возможные лишние символы
+            timePart = timePart.replaceAll("[^0-9:]", "");
 
-            // Клик через JavaScript для надежности
-            ((JavascriptExecutor) driver).executeScript("arguments[0].click();", element);
+            String[] parts = timePart.split(":");
+            if (parts.length >= 2) {
+                int hours = Integer.parseInt(parts[0]);
+                int minutes = Integer.parseInt(parts[1]);
+                return hours * 60 + minutes;
+            } else if (parts.length == 1) {
+                // Если только часы без минут
+                int hours = Integer.parseInt(parts[0]);
+                return hours * 60;
+            }
+        } catch (Exception e) {
+            System.err.println("Error parsing yesterday time: " + time);
+        }
+        return 0;
+    }
 
-            // Задержка после клика
-            Thread.sleep(400 + (long)(Math.random() * 500));
-        } catch (StaleElementReferenceException e) {
-            // Элемент мог устареть - попробуем найти снова и кликнуть
-            System.out.println("Элемент устарел, повторяем клик...");
-            WebElement refreshedElement = wait.until(ExpectedConditions.elementToBeClickable(
-                    By.xpath(".//ancestor-or-self::*[local-name()='a' or local-name()='button']")
-            ));
-            ((JavascriptExecutor) driver).executeScript("arguments[0].click();", refreshedElement);
+    /**
+     * Проверяет варианты ключевого слова
+     */
+    private boolean matchesKeywordVariations(String title, String keyword) {                                                 // нужен ли в extractOrders  ????
+        String lowerTitle = title.toLowerCase();
+        String lowerKeyword = keyword.toLowerCase();
+
+        if (lowerKeyword.equals("юрист")) {
+            return lowerTitle.contains("юрист") ||
+                    lowerTitle.contains("юридич") ||
+                    lowerTitle.contains("юрид");
+        }
+        return false;
+    }
+
+    /**
+     * Извлекает заголовок
+     */
+    private String extractTitle(WebElement card) {
+        String[] selectors = {
+                "h3.SubjectAndPriceStyles__SubjectsText-sc-18v5hu8-1",
+                "h3.SubjectAndPriceStyles__SubjectsText-sc-18v5hu8-1.hEywcV",
+                "h3",
+                "[class*='title']",
+                "[class*='subject']"
+        };
+
+        for (String selector : selectors) {
+            try {
+                WebElement element = card.findElement(By.cssSelector(selector));
+                String title = element.getText().trim();
+                if (!title.isEmpty()) return title;
+            } catch (Exception e) {
+                // continue
+            }
+        }
+        return "";
+    }
+
+    /**
+     * Извлекает цену
+     */
+    private String extractPrice(WebElement card) {
+        String[] selectors = {
+                ".SubjectAndPriceStyles__PriceValue-sc-18v5hu8-5",
+                ".SubjectAndPriceStyles__PriceValue-sc-18v5hu8-5.lfrrNh",
+                "[class*='price']"
+        };
+
+        for (String selector : selectors) {
+            try {
+                WebElement element = card.findElement(By.cssSelector(selector));
+                return cleanPrice(element.getText());
+            } catch (Exception e) {
+                // continue
+            }
+        }
+        return "0";
+    }
+
+    /**
+     * Извлекает описание
+     */
+    private String extractDescription(WebElement card) {
+        String[] selectors = {
+                ".SnippetBodyStyles__MainInfo-sc-tnih0-6",
+                "[class*='description']",
+                "[class*='info']"
+        };
+
+        for (String selector : selectors) {
+            try {
+                WebElement element = card.findElement(By.cssSelector(selector));
+                return element.getText();
+            } catch (Exception e) {
+                // continue
+            }
+        }
+        return "";
+    }
+
+    /**
+     * Прокручивает страницу
+     */
+    private void scrollPage() throws InterruptedException {
+        JavascriptExecutor js = (JavascriptExecutor) driver;
+        long lastHeight = (long) js.executeScript("return document.body.scrollHeight");
+        js.executeScript("window.scrollTo(0, document.body.scrollHeight)");
+        Thread.sleep(2000);
+
+        long newHeight = (long) js.executeScript("return document.body.scrollHeight");
+        if (newHeight > lastHeight) {
+            js.executeScript("window.scrollTo(0, document.body.scrollHeight)");
+            Thread.sleep(1000);
         }
     }
 
+    /**
+     * Очищает цену
+     */
+    private String cleanPrice(String price) {
+        return price == null ? "0" : price.replaceAll("[^0-9]", "").trim();
+    }
+
+    /**
+     * Сохраняет отладочную информацию
+     */
+    private void saveFullPageInfo(String prefix) {
+        try {
+            String html = driver.getPageSource();
+            Files.writeString(Path.of(prefix + "_page.html"), html);
+
+            byte[] screenshot = ((TakesScreenshot)driver).getScreenshotAs(OutputType.BYTES);
+            Files.write(Path.of(prefix + "_screenshot.png"), screenshot);
+
+            Files.writeString(Path.of(prefix + "_url.txt"), driver.getCurrentUrl());
+
+            System.out.println("Debug info saved: " + prefix);
+            System.out.println("URL: " + driver.getCurrentUrl());
+            System.out.println("HTML length: " + html.length());
+
+        } catch (Exception e) {
+            System.err.println("Error saving debug info: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Закрывает браузер
+     */
     public void close() {
         if (driver != null) {
             driver.quit();
+            driver = null;
+            loggedIn = false;
         }
     }
 
-    private void navigateToOrdersPage() throws Exception {
+    /**
+     * Гарантирует авторизацию
+     */
+    public void ensureLoggedIn(String login, String password) throws LoginException {
         try {
-            // Локатор для кнопки "Заказы" в мобильном меню
-            WebElement ordersTab = wait.until(ExpectedConditions.elementToBeClickable(
-                    By.xpath("//a[contains(@href, '/backoffice/n.php')]//div[contains(text(), 'Заказы')]")
-            ));
+            if (driver != null) {
+                driver.quit();
+                driver = null;
+            }
+            initDriver();
+            performFullLogin(login, password);
 
-            // Клик с человеческим поведением
-            humanClick(ordersTab);
+        } catch (Exception e) {
+            throw new LoginException("Ошибка входа: " + e.getMessage());
+        }
+    }
 
-            // Ожидание загрузки страницы заказов (проверяем по заголовку или первому заказу)
-            wait.until(ExpectedConditions.or(
-                    ExpectedConditions.presenceOfElementLocated(
-                            By.xpath("//h1[contains(text(), 'Заказы')]")),
-                    ExpectedConditions.presenceOfElementLocated(
-                            By.cssSelector("[id^='7']")) // ID заказов начинаются с 7
-            ));
+    /**
+     * Выполняет вход - УЛУЧШЕННАЯ ВЕРСИЯ
+     */
+    private void performFullLogin(String login, String password) throws Exception {
+        System.out.println("=== STARTING LOGIN ===");
 
-            System.out.println("Успешно перешли на вкладку 'Заказы'");
+        driver.get("https://profi.ru/backoffice/a.php");
+        Thread.sleep(5000);
+
+        // Сохраняем страницу логина для отладки
+        saveFullPageInfo("login_page");
+
+        try {
+            // Ждем загрузки формы логина
+            WebElement loginInput = wait.until(ExpectedConditions.visibilityOfElementLocated(
+                    By.cssSelector("input.login-form__input-login")));
+
+            System.out.println("Login form loaded");
+
+            // Очищаем и вводим логин
+            loginInput.clear();
+            Thread.sleep(1000);
+            loginInput.sendKeys(login);
+            System.out.println("Login entered");
+
+            // Находим поле пароля
+            WebElement passwordInput = wait.until(ExpectedConditions.visibilityOfElementLocated(
+                    By.cssSelector("input.login-form__input-password")));
+
+            passwordInput.clear();
+            Thread.sleep(1000);
+            passwordInput.sendKeys(password);
+            System.out.println("Password entered");
+
+            // Находим кнопку входа
+            WebElement submitButton = wait.until(ExpectedConditions.elementToBeClickable(
+                    By.cssSelector("a.ButtonsContainer__SubmitButton-sc-1bmmrie-5, button[type='submit']")));
+
+            System.out.println("Submit button found, clicking...");
+            submitButton.click();
+
+            // Ждем успешного входа - проверяем несколько условий
+            System.out.println("Waiting for login completion...");
+
+            boolean loginSuccess = wait.until(d -> {
+                String currentUrl = d.getCurrentUrl();
+                System.out.println("Current URL: " + currentUrl);
+
+                // Успешный вход если:
+                // 1. URL содержит n.php (страница заказов)
+                // 2. Или есть элемент пользователя
+                // 3. Или нет формы логина
+                return currentUrl.contains("n.php") ||
+                        !d.findElements(By.cssSelector(".user-avatar, [class*='user'], [data-testid*='user']")).isEmpty() ||
+                        d.findElements(By.cssSelector(".login-form, input.login-form__input-login")).isEmpty();
+            });
+
+            if (loginSuccess) {
+                loggedIn = true;
+                System.out.println("✅ Login successful!");
+                Thread.sleep(3000);
+            } else {
+                throw new Exception("Login failed - still on login page");
+            }
+
         } catch (TimeoutException e) {
-            saveDebugInfo("orders_tab_error");
-            throw new Exception("Не удалось найти или кликнуть вкладку 'Заказы'", e);
-        }
-    }
-
-    private void closeWelcomePopupIfPresent() {
-        try {
-            // Попробуем найти кнопку закрытия по разным локаторам
-            List<By> closeButtons = Arrays.asList(
-                    By.cssSelector(".Modal__closeButton"),
-                    By.cssSelector("[data-test-id='welcome-close']"),
-                    By.cssSelector("button[aria-label='Закрыть']"),
-                    By.xpath("//button[contains(., 'Закрыть')]")
-            );
-
-            for (By locator : closeButtons) {
-                try {
-                    WebElement closeButton = wait.until(ExpectedConditions.elementToBeClickable(locator));
-                    humanClick(closeButton);
-                    System.out.println("Закрыли приветственное окно");
-                    Thread.sleep(1000); // Даем окну время закрыться
-                    return; // Выходим после успешного закрытия
-                } catch (TimeoutException | NoSuchElementException ignored) {
-                    // Пробуем следующий локатор
-                }
+            // Проверяем если мы уже залогинены
+            if (driver.getCurrentUrl().contains("n.php")) {
+                loggedIn = true;
+                System.out.println("✅ Already logged in");
+            } else {
+                saveFullPageInfo("login_error");
+                throw new Exception("Login timeout: " + e.getMessage());
             }
         } catch (Exception e) {
-            System.err.println("Ошибка при закрытии приветственного окна: " + e.getMessage());
+            saveFullPageInfo("login_error");
+            throw new Exception("Login failed: " + e.getMessage());
         }
     }
 
-    private boolean isOrdersPageActive() {
-        try {
-            // Проверяем активное состояние вкладки по классу или атрибуту
-            return wait.until(ExpectedConditions.attributeContains(
-                    By.xpath("//a[contains(@href, '/backoffice/n.php')]"),
-                    "class",
-                    "active"
-            ));
-        } catch (TimeoutException e) {
-            // Альтернативная проверка по URL
-            return driver.getCurrentUrl().contains("/backoffice/n.php");
+    /**
+     * Извлекает время создания заказа
+     */
+    private String extractCreationTime(WebElement card) {
+        String[] timeSelectors = {
+                ".Date__DateText-sc-e1f8oi-1",
+                "[class*='date']",
+                "[class*='time']",
+                ".order-date",
+                ".snippet-date"
+        };
+
+        for (String selector : timeSelectors) {
+            try {
+                WebElement timeElement = card.findElement(By.cssSelector(selector));
+                return timeElement.getText().trim();
+            } catch (Exception e) {
+                // continue
+            }
         }
-    }
-
-    /*не используем*/
-    public void fillPassportData(
-            String passportNumber,
-            String passportIssueDate,
-            String passportIssuedBy
-    ) throws Exception {
-        try {
-            // Переход на страницу редактирования профиля
-            driver.get("https://profi.ru/backoffice/a.php");
-
-            // Открытие раздела с паспортными данными
-            WebElement passportSection = wait.until(ExpectedConditions.elementToBeClickable(
-                    By.xpath("//div[contains(text(), 'Паспортные данные')]")
-            ));
-            passportSection.click();
-
-            // Заполнение полей
-            WebElement numberInput = wait.until(ExpectedConditions.visibilityOfElementLocated(
-                    By.cssSelector("input[name='passport_number']")
-            ));
-            numberInput.sendKeys(passportNumber);
-
-            WebElement dateInput = wait.until(ExpectedConditions.visibilityOfElementLocated(
-                    By.cssSelector("input[name='passport_issue_date']")
-            ));
-            dateInput.sendKeys(passportIssueDate);
-
-            WebElement issuedByInput = wait.until(ExpectedConditions.visibilityOfElementLocated(
-                    By.cssSelector("input[name='passport_issued_by']")
-            ));
-            issuedByInput.sendKeys(passportIssuedBy);
-
-            // Сохранение
-            WebElement saveButton = wait.until(ExpectedConditions.elementToBeClickable(
-                    By.cssSelector("button[type='submit']")
-            ));
-            saveButton.click();
-
-            // Проверка успешного сохранения
-            wait.until(ExpectedConditions.visibilityOfElementLocated(
-                    By.cssSelector(".alert-success")
-            ));
-        } catch (Exception e) {
-            saveDebugInfo("passport_error");
-            throw e;
-        }
+        return "Неизвестно";
     }
 
 }
+
+
 
