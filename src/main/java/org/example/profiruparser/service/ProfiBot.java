@@ -10,6 +10,8 @@ import org.example.profiruparser.errors.InvalidCredentialsException;
 import org.example.profiruparser.errors.LoginException;
 import org.example.profiruparser.errors.SearchTimeoutException;
 import org.example.profiruparser.errors.SessionExpiredException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
@@ -42,6 +44,9 @@ public class ProfiBot extends TelegramLongPollingBot {
     @Value("${tg.token}")
     private String token;
 
+    private static final Logger log = LoggerFactory.getLogger(ProfiBot.class);
+
+    private final PaymentService paymentService;
     private final AuthenticationService authenticationService;
     private final UserServiceData userService;
     private final SubscriptionService subscriptionService;
@@ -352,12 +357,20 @@ public class ProfiBot extends TelegramLongPollingBot {
                 sendSubscriptionMenu(chatId);
                 break;
 
-            case "1 месяц - 299₽":
+           /* case "1 месяц - 299₽":
                 activateSubscription(chatId, 30);
                 break;
 
             case "12 месяцев - 2490₽":
                 activateSubscription(chatId, 365);
+                break;*/
+
+            case "1 месяц - 299₽":
+                handleSubscriptionPayment(chatId, PaymentService.SubscriptionPlan.MONTHLY);
+                break;
+
+            case "12 месяцев - 2490₽":
+                handleSubscriptionPayment(chatId, PaymentService.SubscriptionPlan.YEARLY);
                 break;
 
             case "🧹 Очистить все": // ← ДОБАВЬ ЭТО
@@ -511,7 +524,11 @@ public class ProfiBot extends TelegramLongPollingBot {
 
         SendMessage message = new SendMessage();
         message.setChatId(chatId.toString());
-        message.setText("💳 *Выбор подписки*\n\n✅ Неограниченный поиск\n✅ Автопоиск по ключам\n✅ Быстрые отклики");
+        message.setText("💳 *Выбор подписки*\n\n" +
+                "✅ Неограниченный поиск\n" +
+                "✅ Автопоиск по ключам\n" +
+                "✅ Быстрые отклики\n\n" +
+                "*После оплаты подписка активируется автоматически!*");
         message.setParseMode("Markdown");
 
         ReplyKeyboardMarkup keyboard = new ReplyKeyboardMarkup();
@@ -706,6 +723,29 @@ public class ProfiBot extends TelegramLongPollingBot {
                     answerCallback(callback, "❌ Ошибка");
                 }
             });
+        }
+
+        if (data.startsWith("check_payment_")) {
+            String paymentId = data.substring("check_payment_".length());
+            checkPaymentStatus(chatId, paymentId, callback);
+        }
+    }
+
+    private void checkPaymentStatus(Long chatId, String paymentId, CallbackQuery callback) {
+        try {
+            var paymentStatus = paymentService.getPaymentStatus(paymentId);
+
+            if ("succeeded".equals(paymentStatus.getStatus())) {
+                answerCallback(callback, "✅ Платеж успешно завершен!");
+                sendMessage(chatId, "🎉 Платеж подтвержден! Подписка активирована.");
+                sendMainMenu(chatId);
+            } else if ("pending".equals(paymentStatus.getStatus())) {
+                answerCallback(callback, "⏳ Платеж еще обрабатывается...");
+            } else {
+                answerCallback(callback, "❌ Платеж не прошел");
+            }
+        } catch (Exception e) {
+            answerCallback(callback, "❌ Ошибка проверки статуса");
         }
     }
 
@@ -930,6 +970,44 @@ public class ProfiBot extends TelegramLongPollingBot {
                 text.equals("60 мин") ||
                 text.equals("120 мин") ||
                 text.startsWith("✏️ Ключ ");
+    }
+
+    private void handleSubscriptionPayment(Long chatId, PaymentService.SubscriptionPlan plan) {
+        try {
+            User user = userService.findByTelegramChatId(chatId);
+            if (user == null) {
+                sendMessage(chatId, "❌ Пользователь не найден");
+                return;
+            }
+
+            var paymentResponse = paymentService.createPayment(chatId, plan);
+
+            if (paymentResponse != null && paymentResponse.getId() != null) {
+                // СОЗДАЕМ РАБОЧИЙ URL ВРУЧНУЮ
+                String paymentUrl = "https://yoomoney.ru/checkout/payments/v2/contract?orderId=" + paymentResponse.getId();
+
+                // Альтернативные рабочие URL:
+                // String paymentUrl = "https://yookassa.ru/payments/" + paymentResponse.getId();
+                // String paymentUrl = "https://yoomoney.ru/checkout/payments/" + paymentResponse.getId();
+
+                String messageText = "💳 *Оплата подписки*\n\n" +
+                        "✅ Сумма: " + (plan == PaymentService.SubscriptionPlan.MONTHLY ? "299" : "2490") + " ₽\n" +
+                        "📝 Описание: " + plan.getDescription() + "\n\n" +
+                        "🔗 Ссылка для оплаты:\n" +
+                        paymentUrl + "\n\n" +
+                        "После успешной оплаты подписка активируется автоматически!";
+
+                sendMessage(chatId, messageText);
+                sendMessage(chatId, "🆔 ID платежа: `" + paymentResponse.getId() + "`");
+
+            } else {
+                sendMessage(chatId, "❌ Ошибка создания платежа");
+            }
+
+        } catch (Exception e) {
+            log.error("Payment error for chatId: {}", chatId, e);
+            sendMessage(chatId, "❌ Ошибка при создании платежа: " + e.getMessage());
+        }
     }
 
 }
