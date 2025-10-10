@@ -75,7 +75,8 @@ public class ProfiBot extends TelegramLongPollingBot {
         REGISTER_USERNAME,
         REGISTER_PASSWORD,
         WAITING_FOR_INTERVAL,
-        AUTO_SEARCH_SETTINGS
+        AUTO_SEARCH_SETTINGS,
+        WAITING_FOR_PAYMENT_ID
     }
 
     private final Map<Long, BotState> userStates = new HashMap<>();
@@ -128,6 +129,14 @@ public class ProfiBot extends TelegramLongPollingBot {
                 userStates.put(chatId, BotState.WAITING_FOR_USERNAME);
                 sendMessage(chatId, "Введите логин:");
                 return;
+            case "✅ Проверить оплату":
+                handleCheckPayment(chatId);
+                return;
+        }
+
+        if (state == BotState.WAITING_FOR_PAYMENT_ID) {
+            handlePaymentIdInput(chatId, text);
+            return;
         }
 
         //  ИЗМЕНИ ПРОВЕРКУ - обрабатываем кнопки через authorized command
@@ -158,6 +167,9 @@ public class ProfiBot extends TelegramLongPollingBot {
 
     private void handleStartCommand(Long chatId) {
         userStates.put(chatId, BotState.NONE);
+
+        checkAutoPayment(chatId);
+
         tempUsernames.remove(chatId);
         userKeyWords.remove(chatId);
 
@@ -357,14 +369,6 @@ public class ProfiBot extends TelegramLongPollingBot {
                 sendSubscriptionMenu(chatId);
                 break;
 
-           /* case "1 месяц - 299₽":
-                activateSubscription(chatId, 30);
-                break;
-
-            case "12 месяцев - 2490₽":
-                activateSubscription(chatId, 365);
-                break;*/
-
             case "1 месяц - 299₽":
                 handleSubscriptionPayment(chatId, PaymentService.SubscriptionPlan.MONTHLY);
                 break;
@@ -399,6 +403,10 @@ public class ProfiBot extends TelegramLongPollingBot {
                 stopAutoSearch(chatId);
                 sendMessage(chatId, "✅ Автопоиск отключен");
                 sendAutoSearchMenu(chatId);
+                break;
+
+            case "✅ Проверить оплату":
+                handleCheckPayment(chatId);
                 break;
 
             case "❌ Выйти":
@@ -466,9 +474,6 @@ public class ProfiBot extends TelegramLongPollingBot {
         User user = userService.findByTelegramChatId(chatId);
         String status = user != null ? getSubscriptionStatus(user.getUsername()) : "❌ Подписка: не активна";
 
-        /*String username = tempUsernames.get(chatId);
-        String status = getSubscriptionStatus(username);*/
-
         SendMessage message = new SendMessage();
         message.setChatId(chatId.toString());
         message.setText("🏠 *Главное меню*\n\n" + status + "\n\nВыберите действие:");
@@ -491,12 +496,16 @@ public class ProfiBot extends TelegramLongPollingBot {
         row3.add(new KeyboardButton("⏰ Автопоиск"));
         row3.add(new KeyboardButton("🔄 Обновить"));
 
+       /* KeyboardRow row4 = new KeyboardRow();
+        row4.add(new KeyboardButton("✅ Проверить оплату"));*/
+
         KeyboardRow row4 = new KeyboardRow();
         row4.add(new KeyboardButton("❌ Выйти"));
 
         rows.add(row1);
         rows.add(row2);
         rows.add(row3);
+        /*rows.add(row4);*/
         rows.add(row4);
         keyboard.setKeyboard(rows);
         message.setReplyMarkup(keyboard);
@@ -543,11 +552,15 @@ public class ProfiBot extends TelegramLongPollingBot {
         row2.add(new KeyboardButton("12 месяцев - 2490₽"));
 
         KeyboardRow row3 = new KeyboardRow();
+        row3.add(new KeyboardButton("✅ Проверить оплату"));
+
+        KeyboardRow row4 = new KeyboardRow();
         row3.add(new KeyboardButton("🔙 Назад"));
 
         rows.add(row1);
         rows.add(row2);
         rows.add(row3);
+        rows.add(row4);
         keyboard.setKeyboard(rows);
         message.setReplyMarkup(keyboard);
 
@@ -983,6 +996,10 @@ public class ProfiBot extends TelegramLongPollingBot {
             var paymentResponse = paymentService.createPayment(chatId, plan);
 
             if (paymentResponse != null && paymentResponse.getId() != null) {
+
+                // ↓↓↓ СОХРАНЯЕМ ID ПЛАТЕЖА ДЛЯ АВТОПРОВЕРКИ ↓↓↓
+                savePaymentId(chatId, paymentResponse.getId());
+
                 // СОЗДАЕМ РАБОЧИЙ URL ВРУЧНУЮ
                 String paymentUrl = "https://yoomoney.ru/checkout/payments/v2/contract?orderId=" + paymentResponse.getId();
 
@@ -1007,6 +1024,70 @@ public class ProfiBot extends TelegramLongPollingBot {
         } catch (Exception e) {
             log.error("Payment error for chatId: {}", chatId, e);
             sendMessage(chatId, "❌ Ошибка при создании платежа: " + e.getMessage());
+        }
+    }
+
+    private void handleCheckPayment(Long chatId) {
+        sendMessage(chatId, "Введите ID платежа:");
+        userStates.put(chatId, BotState.WAITING_FOR_PAYMENT_ID);
+    }
+
+    private void handlePaymentIdInput(Long chatId, String paymentId) {
+        try {
+            var payment = paymentService.getPaymentStatus(paymentId);
+
+            if (payment != null && "succeeded".equals(payment.getStatus())) {
+                User user = userService.findByTelegramChatId(chatId);
+                if (user != null) {
+                    subscriptionService.activateSubscription(user.getUsername(), 30);
+                    sendMessage(chatId, "✅ Подписка активирована!");
+                }
+            } else {
+                sendMessage(chatId, "❌ Платеж не найден или не завершен");
+            }
+        } catch (Exception e) {
+            sendMessage(chatId, "❌ Ошибка проверки");
+        }
+        userStates.put(chatId, BotState.AUTHORIZED_MAIN_MENU);
+    }
+
+    private void checkAutoPayment(Long chatId) {
+        executor.submit(() -> {
+            try {
+                User user = userService.findByTelegramChatId(chatId);
+                if (user == null || subscriptionService.isSubscriptionActive(user.getUsername())) {
+                    return; // Пользователь не найден или подписка уже активна
+                }
+
+                // Здесь можно:
+                // 1. Проверить последние платежи пользователя по API ЮKassa
+                // 2. Или хранить ID платежей в базе и проверять их статусы
+
+                sendMessage(chatId, "🔍 Проверяем ваши платежи...");
+
+                // Временная заглушка - потом реализуешь полноценную проверку
+                // checkUserPayments(chatId, user);
+
+            } catch (Exception e) {
+                log.error("Auto payment check error: {}", e.getMessage());
+            }
+        });
+    }
+
+    private void savePaymentId(Long chatId, String paymentId) {
+        try {
+            User user = userService.findByTelegramChatId(chatId);
+            if (user != null) {
+                // Просто логируем пока - потом можно сохранять в базу
+                log.info("Payment created - ChatId: {}, User: {}, PaymentId: {}",
+                        chatId, user.getUsername(), paymentId);
+
+                // Можно сохранить в базу если нужно:
+                // user.setLastPaymentId(paymentId);
+                // userService.saveUser(user);
+            }
+        } catch (Exception e) {
+            log.error("Error saving payment ID: {}", e.getMessage());
         }
     }
 

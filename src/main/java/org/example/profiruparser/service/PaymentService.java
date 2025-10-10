@@ -108,7 +108,7 @@ public class PaymentService {
                         Long chatId = Long.parseLong(chatIdStr);
                         SubscriptionPlan plan = SubscriptionPlan.valueOf(planStr);
 
-                        // Активируем подписку
+                        // ВЫЗЫВАЕМ МЕТОД ДЛЯ АКТИВАЦИИ ПОДПИСКИ
                         activateSubscription(chatId, plan);
 
                         log.info("Subscription activated via webhook: chatId={}, plan={}", chatId, plan);
@@ -129,12 +129,16 @@ public class PaymentService {
                 return;
             }
 
-            int days = plan == SubscriptionPlan.MONTHLY ? 30 : 365;
-            boolean success = subscriptionService.activateSubscription(user.getUsername(), days);
+            // ИСПОЛЬЗУЕМ НОВЫЙ МЕТОД из SubscriptionService
+            boolean success = subscriptionService.activateSubscriptionViaPayment(user.getUsername(), plan);
 
             if (success) {
-                log.info("Subscription activated for user: {}", user.getUsername());
-                // Здесь можно отправить уведомление в Telegram
+                log.info("Subscription activated via payment for user: {}", user.getUsername());
+
+                // Здесь можно добавить отправку уведомления пользователю
+                // Но для этого нужен доступ к боту из PaymentService
+                // Пока просто логируем
+
             } else {
                 log.error("Failed to activate subscription for user: {}", user.getUsername());
             }
@@ -143,6 +147,7 @@ public class PaymentService {
             log.error("Error activating subscription: {}", e.getMessage());
         }
     }
+
 
     public PaymentCreateResponse getPaymentStatus(String paymentId) {
         return yooKassaClient.getPayment(paymentId);
