@@ -61,24 +61,45 @@ public class MessageHandlerImpl implements MessageHandler {
 
     private boolean handleInputStates(Long chatId, String text, String userState) {
         // ГЛОБАЛЬНЫЕ КОМАНДЫ - РАБОТАЮТ В ЛЮБОМ СОСТОЯНИИ
-        switch (text) {
-            case "/start", "🏠 Старт" -> {
-                handleStartCommand(chatId);
-                return true;
-            }
+        if (text.equals("/start") || text.equals("🏠 Старт")) {
+            handleStartCommand(chatId);
+            return true;
+        }
 
-
-            // ГЛОБАЛЬНЫЕ КНОПКИ МЕНЮ - ВСЕГДА ВОЗВРАЩАЮТ В ГЛАВНОЕ МЕНЮ
-            case "🔙 Назад", "🔄 Обновить" -> {
+        // ГЛОБАЛЬНЫЕ КНОПКИ МЕНЮ - ВСЕГДА ВОЗВРАЩАЮТ В ПРАВИЛЬНОЕ МЕНЮ
+        if (text.equals("🔙 Назад") || text.equals("🔄 Обновить")) {
+            // ВОЗВРАЩАЕМ В ПРАВИЛЬНОЕ МЕНЮ В ЗАВИСИМОСТИ ОТ АВТОРИЗАЦИИ
+            if (isUserAuthorized(chatId)) {
                 sendMainMenu(chatId);
                 stateManager.setUserState(chatId, UserStateManager.STATE_AUTHORIZED_MAIN);
-                return true;
+            } else {
+                sendWelcomeMenu(chatId);
+                stateManager.setUserState(chatId, UserStateManager.STATE_NONE);
             }
-            case "❌ Выйти" -> {
-                authService.handleLogout(chatId);
+            return true;
+        }
+
+        // БЛОКИРОВКА ВСЕХ КНОПОК МЕНЮ ВО ВРЕМЯ ВВОДА ДАННЫХ АВТОРИЗАЦИИ
+        if (userState.equals(UserStateManager.STATE_WAITING_USERNAME) ||
+                userState.equals(UserStateManager.STATE_WAITING_PASSWORD) ||
+                userState.equals(UserStateManager.STATE_REGISTER_USERNAME) ||
+                userState.equals(UserStateManager.STATE_REGISTER_PASSWORD)) {
+
+            // СПИСОК ЗАБЛОКИРОВАННЫХ КНОПОК ВО ВРЕМЯ ВВОДА
+            if (text.equals("🔑 Войти") ||
+                    text.equals("📝 Регистрация") ||
+                    text.equals("📋 Информация") ||      // ← ДОБАВЛЯЕМ
+                    text.equals("📞 Контакты")) {        // ← ДОБАВЛЯЕМ
+
+                telegramService.sendMessage(chatId, "❌ Завершите текущий процесс ввода данных");
                 return true;
             }
         }
+
+        if (text.equals( "❌ Выйти" )) {
+                authService.handleLogout(chatId);
+                return true;
+            }
 
         // КНОПКИ МЕНЮ КЛЮЧЕВЫХ СЛОВ - РАБОТАЮТ В ЛЮБОМ СОСТОЯНИИ ВВОДА
         if (userState.startsWith("WAITING_FOR_KEYWORD_")) {
@@ -188,6 +209,14 @@ public class MessageHandlerImpl implements MessageHandler {
             case "/login", "🔑 Войти":
                 authService.handleLoginCommand(chatId);
                 break;
+
+            case "📋 Информация":                    // ← ДОБАВЛЯЕМ
+                sendInfoMenu(chatId);
+                break;
+            case "📞 Контакты":                     // ← ДОБАВЛЯЕМ
+                sendContactsMenu(chatId);
+                break;
+
             case "✅ Проверить оплату":
                 handleCheckPaymentCommand(chatId);
                 break;
@@ -294,6 +323,14 @@ public class MessageHandlerImpl implements MessageHandler {
             case "🔄 Обновить":
                 sendMainMenu(chatId);
                 break;
+
+            case "📋 Информация":                    // ← ДОБАВЛЯЕМ
+                sendInfoMenu(chatId);
+                break;
+            case "📞 Контакты":                     // ← ДОБАВЛЯЕМ
+                sendContactsMenu(chatId);
+                break;
+
             case "⏰ Автопоиск":
                 autoSearchService.handleAutoSearchCommand(chatId);
                 break;
@@ -399,6 +436,14 @@ public class MessageHandlerImpl implements MessageHandler {
     public void shutdown() {
         autoSearchService.shutdown();
         parser.close();
+    }
+
+    private void sendInfoMenu(Long chatId) {
+        telegramService.sendMessage(menuFactory.createInfoMenu(chatId));
+    }
+
+    private void sendContactsMenu(Long chatId) {
+        telegramService.sendMessage(menuFactory.createContactsMenu(chatId));
     }
 
 }

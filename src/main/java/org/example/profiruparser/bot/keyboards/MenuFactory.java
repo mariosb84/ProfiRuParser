@@ -9,5 +9,6 @@ public interface MenuFactory {
     SendMessage createMainMenu(Long chatId);
     SendMessage createSubscriptionMenu(Long chatId);
     SendMessage createKeywordsMenu(Long chatId, List<String> keywords); // ← ИЗМЕНИЛСЯ
-    /*SendMessage createAutoSearchMenu(Long chatId);*/
+    SendMessage createInfoMenu(Long chatId);        // ← ДОБАВЛЯЕМ
+    SendMessage createContactsMenu(Long chatId);    // ← ДОБАВЛЯЕМ
 }

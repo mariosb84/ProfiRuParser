@@ -21,6 +21,7 @@ public class PaymentService {
     private final YooKassaClient yooKassaClient;
     private final SubscriptionService subscriptionService;
     private final UserServiceData userService;
+    private final PaymentAutoCheckManager autoCheckManager; // ← ИНТЕРФЕЙС вместо реализации
 
     @Value("${app.payment.return-url:https://t.me/your_bot}")
     private String returnUrl;
@@ -83,6 +84,9 @@ public class PaymentService {
             PaymentCreateResponse response = yooKassaClient.createPayment(request);
             log.info("Created payment for chatId: {}, plan: {}, paymentId: {}",
                     chatId, plan, response.getId());
+
+            // ЗАПУСКАЕМ АВТОМАТИЧЕСКУЮ ПРОВЕРКУ ← ДОБАВЛЯЕМ
+            autoCheckManager.startAutoCheck(response.getId(), chatId);
 
             return response;
 

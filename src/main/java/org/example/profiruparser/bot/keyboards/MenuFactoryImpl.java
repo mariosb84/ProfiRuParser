@@ -2,6 +2,7 @@ package org.example.profiruparser.bot.keyboards;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.profiruparser.bot.constants.TextConstants;
 import org.example.profiruparser.domain.model.User;
 import org.example.profiruparser.service.SubscriptionService;
 import org.example.profiruparser.service.UserServiceData;
@@ -41,10 +42,15 @@ public class MenuFactoryImpl implements MenuFactory {
         row1.add(new KeyboardButton("🔑 Войти"));
 
         KeyboardRow row2 = new KeyboardRow();
+        row2.add(new KeyboardButton("📋 Информация"));    // ← ДОБАВЛЯЕМ
+        row2.add(new KeyboardButton("📞 Контакты"));      // ← ДОБАВЛЯЕМ
+
+        KeyboardRow row3 = new KeyboardRow();
         row2.add(new KeyboardButton("🏠 Старт"));
 
         rows.add(row1);
         rows.add(row2);
+        rows.add(row3);
         keyboard.setKeyboard(rows);
         message.setReplyMarkup(keyboard);
 
@@ -76,15 +82,20 @@ public class MenuFactoryImpl implements MenuFactory {
 
         KeyboardRow row3 = new KeyboardRow();
         row3.add(new KeyboardButton("⏰ Автопоиск"));
-        row3.add(new KeyboardButton("🔄 Обновить"));
+        row3.add(new KeyboardButton("📋 Информация"));    // ← ДОБАВЛЯЕМ
 
         KeyboardRow row4 = new KeyboardRow();
+        row4.add(new KeyboardButton("📞 Контакты"));      // ← ДОБАВЛЯЕМ
+        row4.add(new KeyboardButton("🔄 Обновить"));
+
+        KeyboardRow row5 = new KeyboardRow();
         row4.add(new KeyboardButton("❌ Выйти"));
 
         rows.add(row1);
         rows.add(row2);
         rows.add(row3);
         rows.add(row4);
+        rows.add(row5);
         keyboard.setKeyboard(rows);
         message.setReplyMarkup(keyboard);
 
@@ -186,6 +197,51 @@ public class MenuFactoryImpl implements MenuFactory {
             return "❌ Подписка истекла: " +
                     endDate.format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"));
         }
+    }
+
+    @Override
+    public SendMessage createInfoMenu(Long chatId) {
+        SendMessage message = new SendMessage();
+        message.setChatId(chatId.toString());
+        message.setText("📋 *Информация*\n\n" +
+                "Здесь будет основная информация о боте...\n\n" +
+                TextConstants.INFO_TEXT.getText());
+        message.setParseMode("Markdown");
+
+        ReplyKeyboardMarkup keyboard = new ReplyKeyboardMarkup();
+        keyboard.setResizeKeyboard(true);
+
+        List<KeyboardRow> rows = new ArrayList<>();
+        KeyboardRow row1 = new KeyboardRow();
+        row1.add(new KeyboardButton("🔙 Назад"));
+
+        rows.add(row1);
+        keyboard.setKeyboard(rows);
+        message.setReplyMarkup(keyboard);
+
+        return message;
+    }
+
+    @Override
+    public SendMessage createContactsMenu(Long chatId) {
+        SendMessage message = new SendMessage();
+        message.setChatId(chatId.toString());
+        message.setText("📞 *Контакты*\n\n" +
+                TextConstants.CONTACTS_TEXT.getText());
+        /*message.setParseMode("Markdown");*/
+
+        ReplyKeyboardMarkup keyboard = new ReplyKeyboardMarkup();
+        keyboard.setResizeKeyboard(true);
+
+        List<KeyboardRow> rows = new ArrayList<>();
+        KeyboardRow row1 = new KeyboardRow();
+        row1.add(new KeyboardButton("🔙 Назад"));
+
+        rows.add(row1);
+        keyboard.setKeyboard(rows);
+        message.setReplyMarkup(keyboard);
+
+        return message;
     }
 
 }
