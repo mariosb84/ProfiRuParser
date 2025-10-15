@@ -8,6 +8,7 @@ import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import org.springframework.stereotype.Component;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -21,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Парсер заказов с сайта Profi.ru
  */
+@Component
 public class ProfiParser {
     private WebDriver driver;
     private WebDriverWait wait;

@@ -2,7 +2,7 @@ package org.example.profiruparser.config;
 
 import jakarta.persistence.EntityManagerFactory;
 import liquibase.integration.spring.SpringLiquibase;
-import org.example.profiruparser.service.ProfiBot;
+import org.example.profiruparser.bot.ProfiBot;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;

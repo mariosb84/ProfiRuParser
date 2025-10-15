@@ -7,8 +7,11 @@ import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import io.github.bonigarcia.wdm.WebDriverManager;
+import org.springframework.stereotype.Component;
+
 import java.time.Duration;
 
+@Component
 public class ProfiResponder {
     public boolean respondToOrder(String orderId, String message) {
         WebDriverManager.chromedriver().setup();
