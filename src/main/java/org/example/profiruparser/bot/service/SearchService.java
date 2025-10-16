@@ -4,8 +4,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.profiruparser.domain.dto.ProfiOrder;
 import org.example.profiruparser.domain.model.User;
-import org.example.profiruparser.service.ProfiParser;
-import org.example.profiruparser.service.ProfiResponder;
+import org.example.profiruparser.parser.service.ProfiParserService;
+import org.example.profiruparser.responder.ProfiResponder;
 import org.example.profiruparser.service.SubscriptionService;
 import org.example.profiruparser.service.UserServiceData;
 import org.springframework.stereotype.Service;
@@ -23,7 +23,7 @@ import java.util.concurrent.Executors;
 @RequiredArgsConstructor
 public class SearchService {
 
-    private final ProfiParser parser;
+    private final ProfiParserService parser;
     private final ProfiResponder responder;
     private final UserServiceData userService;
     private final SubscriptionService subscriptionService;

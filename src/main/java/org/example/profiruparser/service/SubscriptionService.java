@@ -17,7 +17,7 @@ public class SubscriptionService {
     private static final Logger logger = LoggerFactory.getLogger(SubscriptionService.class);
     private final UserServiceData userService;
 
-    @Transactional
+    /*@Transactional
     public boolean activateSubscription(String username, int days) {
         logger.debug("Activating subscription for user: {}, days: {}", username, days);
 
@@ -26,6 +26,40 @@ public class SubscriptionService {
 
         if (user != null) {
             logger.info("Subscription activated for user: {} until {}", username, newDate);
+            return true;
+        }
+
+        logger.error("Failed to activate subscription for user: {}", username);
+        return false;
+    }*/
+
+    @Transactional
+    public boolean activateSubscription(String username, int days) {
+        logger.debug("Activating subscription for user: {}, days: {}", username, days);
+
+        User user = userService.findUserByUsername(username);
+        if (user == null) {
+            logger.error("User not found: {}", username);
+            return false;
+        }
+
+        LocalDateTime currentEndDate = user.getSubscriptionEndDate();
+        LocalDateTime newEndDate;
+
+        // ЕСЛИ ПОДПИСКА УЖЕ АКТИВНА - ПРОДЛЕВАЕМ ОТ ТЕКУЩЕЙ ДАТЫ ОКОНЧАНИЯ
+        if (currentEndDate != null && currentEndDate.isAfter(LocalDateTime.now())) {
+            newEndDate = currentEndDate.plusDays(days);
+            logger.debug("Extending subscription from {} to {}", currentEndDate, newEndDate);
+        } else {
+            // ЕСЛИ ПОДПИСКИ НЕТ ИЛИ ОНА ИСТЕКЛА - НАЧИНАЕМ С ТЕКУЩЕЙ ДАТЫ
+            newEndDate = LocalDateTime.now().plusDays(days);
+            logger.debug("Starting new subscription until: {}", newEndDate);
+        }
+
+        User updatedUser = userService.updateUserSubscriptionEndDate(username, newEndDate);
+
+        if (updatedUser != null) {
+            logger.info("Subscription activated for user: {} until {}", username, newEndDate);
             return true;
         }
 

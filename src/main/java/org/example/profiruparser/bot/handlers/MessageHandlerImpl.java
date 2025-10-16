@@ -5,7 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.profiruparser.bot.keyboards.MenuFactory;
 import org.example.profiruparser.bot.service.*;
 import org.example.profiruparser.domain.model.User;
-import org.example.profiruparser.service.ProfiParser;
+import org.example.profiruparser.parser.service.ProfiParserService;
 import org.example.profiruparser.service.SubscriptionService;
 import org.example.profiruparser.service.UserServiceData;
 import org.springframework.stereotype.Service;
@@ -34,7 +34,7 @@ public class MessageHandlerImpl implements MessageHandler {
     private final SubscriptionService subscriptionService;
     private final TelegramService telegramService;
     private final MenuFactory menuFactory;
-    private final ProfiParser parser;
+    private final ProfiParserService parser;
 
     @Override
     public void handleTextMessage(Message message) {
@@ -77,6 +77,15 @@ public class MessageHandlerImpl implements MessageHandler {
                 stateManager.setUserState(chatId, UserStateManager.STATE_NONE);
             }
             return true;
+        }
+
+        // БЛОКИРОВКА ВСЕХ КНОПОК МЕНЮ ВО ВРЕМЯ ВВОДА ПОИСКОВОГО ЗАПРОСА
+        if (userState.equals(UserStateManager.STATE_WAITING_SEARCH_QUERY)) {
+            if (isMenuCommand(text)) {
+                telegramService.sendMessage(chatId,
+                        "❌ Завершите ввод поискового запроса или нажмите '🔙 Назад' для отмены");
+                return true;
+            }
         }
 
         // БЛОКИРОВКА ВСЕХ КНОПОК МЕНЮ ВО ВРЕМЯ ВВОДА ДАННЫХ АВТОРИЗАЦИИ
@@ -383,6 +392,8 @@ public class MessageHandlerImpl implements MessageHandler {
                 text.equals("120 мин") ||
                 text.equals("✅ Начать поиск") ||
                 text.equals("❌ Отмена") ||
+                text.equals("📋 Информация") ||        // ← ДОБАВЛЯЕМ
+                text.equals("📞 Контакты") ||         // ← ДОБАВЛЯЕМ
                 text.startsWith("✏️ Ключ ");
     }
 
@@ -401,7 +412,13 @@ public class MessageHandlerImpl implements MessageHandler {
                 UserStateManager.STATE_WAITING_INTERVAL.equals(state) ||
                 UserStateManager.STATE_AUTHORIZED_KEYWORDS.equals(state) ||
                 UserStateManager.STATE_SUBSCRIPTION_MENU.equals(state) ||
-                UserStateManager.STATE_SEARCH_IN_PROGRESS.equals(state)) && user != null;
+                UserStateManager.STATE_SEARCH_IN_PROGRESS.equals(state) ||
+
+                // ДОБАВЛЯЕМ СОСТОЯНИЯ ВВОДА ПОИСКА:
+                UserStateManager.STATE_WAITING_SEARCH_QUERY.equals(state) ||
+                UserStateManager.STATE_WAITING_SEARCH_CONFIRMATION.equals(state)
+
+                 ) && user != null;
     }
 
     private boolean isFreeCommand(String text) {

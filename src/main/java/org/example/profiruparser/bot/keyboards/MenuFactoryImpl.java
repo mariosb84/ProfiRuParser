@@ -124,16 +124,16 @@ public class MenuFactoryImpl implements MenuFactory {
         KeyboardRow row2 = new KeyboardRow();
         row2.add(new KeyboardButton("12 месяцев - 2490₽"));
 
-        KeyboardRow row3 = new KeyboardRow();
-        row3.add(new KeyboardButton("✅ Проверить оплату"));
+        /*KeyboardRow row3 = new KeyboardRow();
+        row3.add(new KeyboardButton("✅ Проверить оплату"));*/  // пока  убираем ручную проверку оплаты
 
-        KeyboardRow row4 = new KeyboardRow();
-        row4.add(new KeyboardButton("🔙 Назад"));
+        KeyboardRow row3 = new KeyboardRow();
+        row3.add(new KeyboardButton("🔙 Назад"));
 
         rows.add(row1);
         rows.add(row2);
         rows.add(row3);
-        rows.add(row4);
+        /*rows.add(row4);*/
         keyboard.setKeyboard(rows);
         message.setReplyMarkup(keyboard);
 
