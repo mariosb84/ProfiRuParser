@@ -17,22 +17,6 @@ public class SubscriptionService {
     private static final Logger logger = LoggerFactory.getLogger(SubscriptionService.class);
     private final UserServiceData userService;
 
-    /*@Transactional
-    public boolean activateSubscription(String username, int days) {
-        logger.debug("Activating subscription for user: {}, days: {}", username, days);
-
-        LocalDateTime newDate = LocalDateTime.now().plusDays(days);
-        User user = userService.updateUserSubscriptionEndDate(username, newDate);
-
-        if (user != null) {
-            logger.info("Subscription activated for user: {} until {}", username, newDate);
-            return true;
-        }
-
-        logger.error("Failed to activate subscription for user: {}", username);
-        return false;
-    }*/
-
     @Transactional
     public boolean activateSubscription(String username, int days) {
         logger.debug("Activating subscription for user: {}, days: {}", username, days);

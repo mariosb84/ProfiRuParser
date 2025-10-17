@@ -110,7 +110,8 @@ public class MenuFactoryImpl implements MenuFactory {
                 "✅ Неограниченный поиск\n" +
                 "✅ Автопоиск по ключам\n" +
                 "✅ Быстрые отклики\n\n" +
-                "*После оплаты подписка активируется автоматически!*");
+                "*После оплаты подписка активируется автоматически" +
+                " втечение 59 секунд!*");
         message.setParseMode("Markdown");
 
         ReplyKeyboardMarkup keyboard = new ReplyKeyboardMarkup();

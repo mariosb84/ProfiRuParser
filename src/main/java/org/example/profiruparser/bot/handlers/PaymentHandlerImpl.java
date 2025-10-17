@@ -55,7 +55,8 @@ public class PaymentHandlerImpl implements PaymentHandler {
                             "📝 Описание: " + subscriptionPlan.getDescription() + "\n\n" +
                             "🔗 Ссылка для оплаты:\n" +
                             paymentUrl + "\n\n" +
-                            "После успешной оплаты подписка активируется автоматически!";
+                            "После успешной оплаты подписка активируется автоматически " +
+                            "втечение 59 секунд!";
 
                     telegramService.sendMessage(chatId, messageText);
                     telegramService.sendMessage(chatId, "🆔 ID платежа: `" + paymentResponse.getId() + "`");

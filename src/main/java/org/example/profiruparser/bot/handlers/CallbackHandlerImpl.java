@@ -31,46 +31,64 @@ public class CallbackHandlerImpl implements CallbackHandler {
 
         try {
             if (data.startsWith("respond_")) {
-                handleRespondCallback(callbackQuery, data);
+                handleRespondCallback(callbackQuery, data, chatId);
             } else if (data.startsWith("check_payment_")) {
                 handlePaymentCheckCallback(callbackQuery, data);
             }
         } catch (Exception e) {
             log.error("Error handling callback: {}", e.getMessage());
-            answerCallback(callbackQuery, "❌ Ошибка обработки запроса");
+            // Не отвечаем на колбэк если уже прошло много времени
         }
     }
 
-    private void handleRespondCallback(CallbackQuery callbackQuery, String data) {
+    private void handleRespondCallback(CallbackQuery callbackQuery, String data, Long chatId) {
+        // СРАЗУ отвечаем на колбэк чтобы избежать "query is too old"
+        answerCallback(callbackQuery, "⏳ Отправляем отклик...");
+
         executor.submit(() -> {
             try {
                 String orderId = data.substring("respond_".length());
-                boolean success = searchService.handleRespondToOrder(orderId);
-                answerCallback(callbackQuery, success ? "✅ Отклик отправлен" : "❌ Ошибка отправки");
+                boolean success = searchService.handleRespondToOrder(chatId, orderId);
+
+                // Результат отправляем ОТДЕЛЬНЫМ сообщением
+                if (success) {
+                    telegramService.sendMessage(chatId, "✅ Отклик на заказ #" + orderId + " отправлен!");
+                } else {
+                    telegramService.sendMessage(chatId, "❌ Не удалось отправить отклик на заказ #" + orderId);
+                }
             } catch (Exception e) {
                 log.error("Error responding to order: {}", e.getMessage());
-                answerCallback(callbackQuery, "❌ Ошибка");
+                telegramService.sendMessage(chatId, "❌ Ошибка при отправке отклика");
             }
         });
     }
 
     private void handlePaymentCheckCallback(CallbackQuery callbackQuery, String data) {
+        // Для платежей тоже сразу отвечаем
+        answerCallback(callbackQuery, "⏳ Проверяем платеж...");
+
         executor.submit(() -> {
             try {
                 String paymentId = data.substring("check_payment_".length());
                 paymentHandler.handlePaymentCheckCallback(callbackQuery, paymentId);
             } catch (Exception e) {
                 log.error("Error handling payment callback: {}", e.getMessage());
-                answerCallback(callbackQuery, "❌ Ошибка проверки платежа");
+                telegramService.sendMessage(callbackQuery.getMessage().getChatId(), "❌ Ошибка проверки платежа");
             }
         });
     }
 
     private void answerCallback(CallbackQuery callbackQuery, String text) {
-        AnswerCallbackQuery answer = new AnswerCallbackQuery();
-        answer.setCallbackQueryId(callbackQuery.getId());
-        answer.setText(text);
-        telegramService.answerCallback(answer);
+        try {
+            AnswerCallbackQuery answer = new AnswerCallbackQuery();
+            answer.setCallbackQueryId(callbackQuery.getId());
+            answer.setText(text);
+            answer.setShowAlert(false); // Всплывающее уведомление
+            telegramService.answerCallback(answer);
+        } catch (Exception e) {
+            log.warn("Failed to answer callback (probably too old): {}", e.getMessage());
+            // Игнорируем ошибку "query is too old"
+        }
     }
 
 }

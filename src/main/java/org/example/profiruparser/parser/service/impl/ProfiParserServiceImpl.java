@@ -3,6 +3,7 @@ package org.example.profiruparser.parser.service.impl;
 import org.example.profiruparser.parser.service.ProfiParserService;
 import org.example.profiruparser.domain.dto.ProfiOrder;
 import org.example.profiruparser.errors.LoginException;
+import org.openqa.selenium.WebDriver;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -46,6 +47,12 @@ public class ProfiParserServiceImpl implements ProfiParserService {
     @Override
     public void close() {
         webDriverManager.quitDriver();
+    }
+
+    // ДОБАВИТЬ ЭТОТ МЕТОД
+    @Override
+    public WebDriver getDriver() {
+        return webDriverManager.getDriver();
     }
 
 }

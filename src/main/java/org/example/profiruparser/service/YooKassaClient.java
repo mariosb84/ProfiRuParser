@@ -78,24 +78,6 @@ public class YooKassaClient {
         }
     }
 
-/*    public PaymentCreateResponse getPayment(String paymentId) {
-        try {
-            String url = (testMode ? TEST_API_URL : API_URL) + "payments/" + paymentId;
-
-            HttpHeaders headers = createAuthHeaders();
-            HttpEntity<String> entity = new HttpEntity<>(headers);
-
-            ResponseEntity<PaymentCreateResponse> response = restTemplate.exchange(
-                    url, HttpMethod.GET, entity, PaymentCreateResponse.class);
-
-            return response.getBody();
-
-        } catch (Exception e) {
-            log.error("Error getting payment: {}", e.getMessage());
-            throw new RuntimeException("Get payment failed", e);
-        }
-    }*/
-
     private HttpHeaders createAuthHeaders() {
         HttpHeaders headers = new HttpHeaders();
         String auth = shopId + ":" + secretKey;

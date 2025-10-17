@@ -8,6 +8,7 @@ import org.example.profiruparser.parser.service.ProfiParserService;
 import org.example.profiruparser.responder.ProfiResponder;
 import org.example.profiruparser.service.SubscriptionService;
 import org.example.profiruparser.service.UserServiceData;
+import org.openqa.selenium.WebDriver;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
@@ -126,10 +127,8 @@ public class SearchService {
                 .replyMarkup(markup)
                 .build();
 
-
-        // ДОБАВЬ ЭТУ ПАУЗУ
         try {
-            Thread.sleep(300); // 300ms между сообщениями
+            Thread.sleep(300);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             return;
@@ -138,9 +137,23 @@ public class SearchService {
         telegramService.sendMessage(message);
     }
 
-        public boolean handleRespondToOrder(String orderId) {
+    // ИСПРАВЛЕННЫЙ МЕТОД - принимает chatId для получения пользователя и драйвера
+    public boolean handleRespondToOrder(Long chatId, String orderId) {
         try {
-            boolean success = responder.respondToOrder(orderId, "Хочу выполнить заказ!");
+            User user = userService.findByTelegramChatId(chatId);
+            if (user == null) {
+                log.error("User not found for chatId: {}", chatId);
+                return false;
+            }
+
+            // Получаем драйвер из парсера
+            WebDriver driver = parser.getDriver();
+            if (driver == null) {
+                log.error("No active driver available");
+                return false;
+            }
+
+            boolean success = responder.respondToOrder(driver, orderId, "Хочу выполнить заказ!");
             return success;
         } catch (Exception e) {
             log.error("Error responding to order: {}", e.getMessage());

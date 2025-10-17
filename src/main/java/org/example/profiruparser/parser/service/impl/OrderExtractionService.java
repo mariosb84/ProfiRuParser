@@ -8,14 +8,18 @@ import org.openqa.selenium.WebElement;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
 @Service("orderExtractionService")
 @Qualifier("orderExtractionService")
 public class OrderExtractionService {
+
+    private final OrderSortingService orderSortingService;
+
+    public OrderExtractionService() {
+        this.orderSortingService = new OrderSortingService();
+    }
 
     public List<ProfiOrder> extractOrders(WebDriver driver, String keyword) {
         List<ProfiOrder> orders = new ArrayList<>();
@@ -55,139 +59,7 @@ public class OrderExtractionService {
             }
         }
 
-        return sortOrdersByDate(orders);
-    }
-
-    private List<ProfiOrder> sortOrdersByDate(List<ProfiOrder> orders) {
-        orders.sort((o1, o2) -> {
-            try {
-                long minutes1 = parseTimeToMinutes(o1.getCreationTime());
-                long minutes2 = parseTimeToMinutes(o2.getCreationTime());
-
-                if (minutes1 > 24 * 60 && minutes2 > 24 * 60) {
-                    // Оба старые - сортируем по убыванию (новые старые первыми)
-                    return Long.compare(minutes1, minutes2);
-                } else if (!isOldDate(minutes1) && !isOldDate(minutes2)) {
-                    // Оба сегодняшние - сортируем по возрастанию (новые первыми)
-                    return Long.compare(minutes1, minutes2);
-                } else {
-                    // Разные типы - сегодняшние всегда перед старыми
-                    return isOldDate(minutes1) ? 1 : -1;
-                }
-            } catch (Exception e) {
-                return 0;
-            }
-        });
-
-        // ПОЛНАЯ ПРОВЕРКА ВСЕХ ОТСОРТИРОВАННЫХ ЗАКАЗОВ
-        System.out.println("=== FULL SORTED ORDERS CHECK ===");
-        for (int i = 0; i < orders.size(); i++) {
-            ProfiOrder order = orders.get(i);
-            String time = order.getCreationTime();
-            long minutes = parseTimeToMinutes(time);
-            String type = isOldDate(minutes) ? "OLD" : "TODAY";
-            System.out.printf("%2d: %s (%d min, %s) - %s%n",
-                    i, time, minutes, type,
-                    order.getTitle().length() > 30 ? order.getTitle().substring(0, 30) + "..." : order.getTitle());
-        }
-
-        return orders;
-    }
-
-    private boolean isOldDate(long minutes) {
-        return minutes > 24 * 60; // старше суток
-    }
-
-    private long parseTimeToMinutes(String time) {
-        if (time == null || time.equals("Неизвестно")) {
-            return Long.MAX_VALUE;
-        }
-
-        String lowerTime = time.toLowerCase();
-
-        if (lowerTime.contains("только что")) {
-            return 0;
-        } else if (lowerTime.contains("минут")) {
-            return Integer.parseInt(lowerTime.replaceAll("[^0-9]", ""));
-        } else if (lowerTime.contains("час")) {
-            int hours = Integer.parseInt(lowerTime.replaceAll("[^0-9]", ""));
-            return hours * 60L;
-        } else if (lowerTime.contains("вчера")) {
-            return 24 * 60; // Просто 1 день, без времени
-        } else {
-            System.out.println("DEBUG: Parsing absolute date: '" + time + "'");
-            long result = parseAbsoluteDateToMinutes(lowerTime);
-            System.out.println("DEBUG: Date '" + time + "' -> " + result + " minutes");
-            return result;
-        }
-    }
-
-    private long parseAbsoluteDateToMinutes(String date) {
-        try {
-            int currentYear = LocalDate.now().getYear();
-
-            String cleanDate = date.replaceAll("[^0-9.]", "").trim();
-
-            if (cleanDate.contains(".")) {
-                String[] parts = cleanDate.split("\\.");
-                int day = Integer.parseInt(parts[0]);
-                int month = Integer.parseInt(parts[1]);
-                int year = parts.length > 2 ? Integer.parseInt(parts[2]) : currentYear;
-
-                LocalDate orderDate = LocalDate.of(year, month, day);
-                LocalDate today = LocalDate.now();
-
-                // МЕНЯЕМ ПОРЯДОК: today - orderDate (чтобы получить положительное значение)
-                long daysBetween = ChronoUnit.DAYS.between(orderDate, today);
-
-                return daysBetween * 24 * 60L;
-            } else {
-                int day = Integer.parseInt(cleanDate);
-                int month = getMonthFromText(date);
-                LocalDate orderDate = LocalDate.of(currentYear, month, day);
-                LocalDate today = LocalDate.now();
-
-                // МЕНЯЕМ ПОРЯДОК: today - orderDate
-                long daysBetween = ChronoUnit.DAYS.between(orderDate, today);
-
-                return daysBetween * 24 * 60L;
-            }
-        } catch (Exception e) {
-            System.err.println("Error parsing date: " + date);
-            return 100 * 24 * 60L;
-        }
-    }
-
-    private int getMonthFromText(String date) {
-        String[] months = {"января", "февраля", "марта", "апреля", "мая", "июня",
-                "июля", "августа", "сентября", "октября", "ноября", "декабря"};
-
-        for (int i = 0; i < months.length; i++) {
-            if (date.contains(months[i])) {
-                return i + 1;
-            }
-        }
-        return 10; // октябрь по умолчанию, если месяц не распознан
-    }
-
-    private int parseYesterdayTime(String time) {
-        try {
-            String timePart = time.replace("вчера в", "").trim();
-            timePart = timePart.replaceAll("[^0-9:]", "");
-
-            String[] parts = timePart.split(":");
-            if (parts.length >= 2) {
-                int hours = Integer.parseInt(parts[0]);
-                int minutes = Integer.parseInt(parts[1]);
-                return hours * 60 + minutes;
-            } else if (parts.length == 1) {
-                int hours = Integer.parseInt(parts[0]);
-                return hours * 60;
-            }
-        } catch (Exception e) {
-            System.err.println("Error parsing yesterday time: " + time);
-        }
-        return 0;
+        return orderSortingService.sortOrdersByDate(orders);
     }
 
     private boolean matchesKeywordVariations(String title, String keyword) {
