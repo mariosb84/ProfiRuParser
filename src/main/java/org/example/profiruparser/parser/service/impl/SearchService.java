@@ -106,7 +106,7 @@ public class SearchService {
                     return;
                 }
             } catch (Exception e) {
-                // ignore
+                /* ignore*/
             }
             Thread.sleep(1000);
         }
@@ -128,7 +128,7 @@ public class SearchService {
                     return element;
                 }
             } catch (Exception e) {
-                // continue
+                /* continue*/
             }
         }
         throw new NoSuchElementException("Search button not found");

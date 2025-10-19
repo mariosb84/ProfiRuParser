@@ -14,7 +14,7 @@ public class UserStateManager {
     private final Map<Long, List<String>> userKeyWords = new ConcurrentHashMap<>();
     private final Map<Long, Integer> userIntervals = new ConcurrentHashMap<>();
 
-    // Константы состояний
+    /* Константы состояний*/
     public static final String STATE_NONE = "NONE";
     public static final String STATE_WAITING_USERNAME = "WAITING_FOR_USERNAME";
     public static final String STATE_WAITING_PASSWORD = "WAITING_FOR_PASSWORD";

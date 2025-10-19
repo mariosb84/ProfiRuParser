@@ -45,12 +45,12 @@ public class MessageHandlerImpl implements MessageHandler {
         log.debug("Handling message - ChatId: {}, Text: {}, State: {}", chatId, text, userState);
 
         try {
-            // Обработка состояний ввода
+            /* Обработка состояний ввода*/
             if (handleInputStates(chatId, text, userState)) {
                 return;
             }
 
-            // Обработка команд
+            /* Обработка команд*/
             handleCommand(chatId, text);
 
         } catch (Exception e) {
@@ -60,15 +60,15 @@ public class MessageHandlerImpl implements MessageHandler {
     }
 
     private boolean handleInputStates(Long chatId, String text, String userState) {
-        // ГЛОБАЛЬНЫЕ КОМАНДЫ - РАБОТАЮТ В ЛЮБОМ СОСТОЯНИИ
+        /* ГЛОБАЛЬНЫЕ КОМАНДЫ - РАБОТАЮТ В ЛЮБОМ СОСТОЯНИИ*/
         if (text.equals("/start") || text.equals("🏠 Старт")) {
             handleStartCommand(chatId);
             return true;
         }
 
-        // ГЛОБАЛЬНЫЕ КНОПКИ МЕНЮ - ВСЕГДА ВОЗВРАЩАЮТ В ПРАВИЛЬНОЕ МЕНЮ
+        /* ГЛОБАЛЬНЫЕ КНОПКИ МЕНЮ - ВСЕГДА ВОЗВРАЩАЮТ В ПРАВИЛЬНОЕ МЕНЮ*/
         if (text.equals("🔙 Назад") || text.equals("🔄 Обновить")) {
-            // ВОЗВРАЩАЕМ В ПРАВИЛЬНОЕ МЕНЮ В ЗАВИСИМОСТИ ОТ АВТОРИЗАЦИИ
+            /* ВОЗВРАЩАЕМ В ПРАВИЛЬНОЕ МЕНЮ В ЗАВИСИМОСТИ ОТ АВТОРИЗАЦИИ*/
             if (isUserAuthorized(chatId)) {
                 sendMainMenu(chatId);
                 stateManager.setUserState(chatId, UserStateManager.STATE_AUTHORIZED_MAIN);
@@ -79,7 +79,7 @@ public class MessageHandlerImpl implements MessageHandler {
             return true;
         }
 
-        // БЛОКИРОВКА ВСЕХ КНОПОК МЕНЮ ВО ВРЕМЯ ВВОДА ПОИСКОВОГО ЗАПРОСА
+        /* БЛОКИРОВКА ВСЕХ КНОПОК МЕНЮ ВО ВРЕМЯ ВВОДА ПОИСКОВОГО ЗАПРОСА*/
         if (userState.equals(UserStateManager.STATE_WAITING_SEARCH_QUERY)) {
             if (isMenuCommand(text)) {
                 telegramService.sendMessage(chatId,
@@ -88,17 +88,17 @@ public class MessageHandlerImpl implements MessageHandler {
             }
         }
 
-        // БЛОКИРОВКА ВСЕХ КНОПОК МЕНЮ ВО ВРЕМЯ ВВОДА ДАННЫХ АВТОРИЗАЦИИ
+        /* БЛОКИРОВКА ВСЕХ КНОПОК МЕНЮ ВО ВРЕМЯ ВВОДА ДАННЫХ АВТОРИЗАЦИИ*/
         if (userState.equals(UserStateManager.STATE_WAITING_USERNAME) ||
                 userState.equals(UserStateManager.STATE_WAITING_PASSWORD) ||
                 userState.equals(UserStateManager.STATE_REGISTER_USERNAME) ||
                 userState.equals(UserStateManager.STATE_REGISTER_PASSWORD)) {
 
-            // СПИСОК ЗАБЛОКИРОВАННЫХ КНОПОК ВО ВРЕМЯ ВВОДА
+            /* СПИСОК ЗАБЛОКИРОВАННЫХ КНОПОК ВО ВРЕМЯ ВВОДА*/
             if (text.equals("🔑 Войти") ||
                     text.equals("📝 Регистрация") ||
-                    text.equals("📋 Информация") ||      // ← ДОБАВЛЯЕМ
-                    text.equals("📞 Контакты")) {        // ← ДОБАВЛЯЕМ
+                    text.equals("📋 Информация") ||      /* ← ДОБАВЛЯЕМ*/
+                    text.equals("📞 Контакты")) {        /* ← ДОБАВЛЯЕМ*/
 
                 telegramService.sendMessage(chatId, "❌ Завершите текущий процесс ввода данных");
                 return true;
@@ -110,18 +110,18 @@ public class MessageHandlerImpl implements MessageHandler {
                 return true;
             }
 
-        // КНОПКИ МЕНЮ КЛЮЧЕВЫХ СЛОВ - РАБОТАЮТ В ЛЮБОМ СОСТОЯНИИ ВВОДА
+        /* КНОПКИ МЕНЮ КЛЮЧЕВЫХ СЛОВ - РАБОТАЮТ В ЛЮБОМ СОСТОЯНИИ ВВОДА*/
         if (userState.startsWith("WAITING_FOR_KEYWORD_")) {
-            // ЕСЛИ НАЖАТА КНОПКА МЕНЮ КЛЮЧЕВЫХ СЛОВ - ОБРАБАТЫВАЕМ ЕЕ
+            /* ЕСЛИ НАЖАТА КНОПКА МЕНЮ КЛЮЧЕВЫХ СЛОВ - ОБРАБАТЫВАЕМ ЕЕ*/
             if (text.startsWith("✏️ Ключ ") || text.equals("🧹 Очистить все") || text.equals("🚀 Поиск по ключам")) {
-                // СБРАСЫВАЕМ СОСТОЯНИЕ ВВОДА
+                /* СБРАСЫВАЕМ СОСТОЯНИЕ ВВОДА*/
                 stateManager.setUserState(chatId, UserStateManager.STATE_AUTHORIZED_KEYWORDS);
-                // ПЕРЕДАЕМ УПРАВЛЕНИЕ В handleAuthorizedCommand
+                /* ПЕРЕДАЕМ УПРАВЛЕНИЕ В handleAuthorizedCommand*/
                 handleAuthorizedCommand(chatId, text);
                 return true;
             }
 
-            // ЕСЛИ ЭТО ТЕКСТ ДЛЯ ВВОДА КЛЮЧА - ОБРАБАТЫВАЕМ
+            /* ЕСЛИ ЭТО ТЕКСТ ДЛЯ ВВОДА КЛЮЧА - ОБРАБАТЫВАЕМ*/
             try {
                 keywordService.handleKeywordInput(chatId, text);
                 List<String> keywords = keywordService.getKeywordsForDisplay(chatId);
@@ -133,7 +133,7 @@ public class MessageHandlerImpl implements MessageHandler {
             }
         }
 
-        // ОСТАЛЬНЫЕ СОСТОЯНИЯ ВВОДА
+        /* ОСТАЛЬНЫЕ СОСТОЯНИЯ ВВОДА*/
         switch (userState) {
             case UserStateManager.STATE_WAITING_PAYMENT_ID:
                 paymentHandler.handlePaymentCheck(chatId, text);
@@ -205,7 +205,7 @@ public class MessageHandlerImpl implements MessageHandler {
     }
 
     private void handleCommand(Long chatId, String text) {
-        // ОБРАБАТЫВАЕМ КОМАНДУ СТАРТ ВНЕ ЗАВИСИМОСТИ ОТ СОСТОЯНИЯ
+        /* ОБРАБАТЫВАЕМ КОМАНДУ СТАРТ ВНЕ ЗАВИСИМОСТИ ОТ СОСТОЯНИЯ*/
         if (text.equals("/start") || text.equals("🏠 Старт")) {
             handleStartCommand(chatId);
             return;
@@ -219,10 +219,10 @@ public class MessageHandlerImpl implements MessageHandler {
                 authService.handleLoginCommand(chatId);
                 break;
 
-            case "📋 Информация":                    // ← ДОБАВЛЯЕМ
+            case "📋 Информация":                    /* ← ДОБАВЛЯЕМ*/
                 sendInfoMenu(chatId);
                 break;
-            case "📞 Контакты":                     // ← ДОБАВЛЯЕМ
+            case "📞 Контакты":                     /* ← ДОБАВЛЯЕМ*/
                 sendContactsMenu(chatId);
                 break;
 
@@ -259,9 +259,9 @@ public class MessageHandlerImpl implements MessageHandler {
 
         String userState = stateManager.getUserState(chatId);
 
-        // ЕСЛИ НЕ КОМАНДА МЕНЮ И МЫ В СОСТОЯНИИ ВВОДА ПОИСКА - ЭТО ПОИСКОВЫЙ ЗАПРОС
+        /* ЕСЛИ НЕ КОМАНДА МЕНЮ И МЫ В СОСТОЯНИИ ВВОДА ПОИСКА - ЭТО ПОИСКОВЫЙ ЗАПРОС*/
         if (!isMenuCommand(text) && UserStateManager.STATE_WAITING_SEARCH_QUERY.equals(userState)) {
-            // Сохраняем запрос и показываем подтверждение
+            /* Сохраняем запрос и показываем подтверждение*/
             stateManager.setTempSearchQuery(chatId, text);
             stateManager.setUserState(chatId, UserStateManager.STATE_WAITING_SEARCH_CONFIRMATION);
 
@@ -286,13 +286,13 @@ public class MessageHandlerImpl implements MessageHandler {
             return;
         }
 
-        // ЕСЛИ НЕ КОМАНДА МЕНЮ И МЫ В ГЛАВНОМ МЕНЮ - ЭТО НЕИЗВЕСТНАЯ КОМАНДА
+        /* ЕСЛИ НЕ КОМАНДА МЕНЮ И МЫ В ГЛАВНОМ МЕНЮ - ЭТО НЕИЗВЕСТНАЯ КОМАНДА*/
         if (!isMenuCommand(text) && UserStateManager.STATE_AUTHORIZED_MAIN.equals(userState)) {
             telegramService.sendMessage(chatId, "Неизвестная команда");
             return;
         }
 
-        // Проверка подписки для платных функций
+        /* Проверка подписки для платных функций*/
         if (!subscriptionService.isSubscriptionActive(user.getUsername()) && !isFreeCommand(text)) {
             telegramService.sendMessage(chatId, "❌ Требуется активная подписка!");
             sendSubscriptionMenu(chatId);
@@ -333,10 +333,10 @@ public class MessageHandlerImpl implements MessageHandler {
                 sendMainMenu(chatId);
                 break;
 
-            case "📋 Информация":                    // ← ДОБАВЛЯЕМ
+            case "📋 Информация":                    /* ← ДОБАВЛЯЕМ*/
                 sendInfoMenu(chatId);
                 break;
-            case "📞 Контакты":                     // ← ДОБАВЛЯЕМ
+            case "📞 Контакты":                     /* ← ДОБАВЛЯЕМ*/
                 sendContactsMenu(chatId);
                 break;
 
@@ -352,12 +352,12 @@ public class MessageHandlerImpl implements MessageHandler {
             case "30 мин":
             case "60 мин":
             case "120 мин":
-                // ВСЕГДА ОБРАБАТЫВАЕМ КАК КОМАНДУ МЕНЮ
+                /* ВСЕГДА ОБРАБАТЫВАЕМ КАК КОМАНДУ МЕНЮ*/
                 autoSearchService.handleIntervalButton(chatId, text);
                 break;
             case "✅ Начать поиск":
             case "❌ Отмена":
-                // Эти кнопки обрабатываются выше в состоянии подтверждения
+                /* Эти кнопки обрабатываются выше в состоянии подтверждения*/
                 break;
             case "❌ Выйти":
                 authService.handleLogout(chatId);
@@ -371,7 +371,7 @@ public class MessageHandlerImpl implements MessageHandler {
         }
     }
 
-    // ДОБАВИТЬ МЕТОД ПРОВЕРКИ КОМАНД МЕНЮ
+    /* ДОБАВИТЬ МЕТОД ПРОВЕРКИ КОМАНД МЕНЮ*/
     private boolean isMenuCommand(String text) {
         return text.equals("🔍 Ручной поиск") ||
                 text.equals("⚙️ Ключевые слова") ||
@@ -386,14 +386,14 @@ public class MessageHandlerImpl implements MessageHandler {
                 text.equals("🔔 Включить автопоиск") ||
                 text.equals("🔕 Выключить автопоиск") ||
                 text.equals("❌ Выйти") ||
-                // ДОБАВЛЯЕМ КНОПКИ ИНТЕРВАЛОВ В КОМАНДЫ МЕНЮ
+                /* ДОБАВЛЯЕМ КНОПКИ ИНТЕРВАЛОВ В КОМАНДЫ МЕНЮ*/
                 text.equals("30 мин") ||
                 text.equals("60 мин") ||
                 text.equals("120 мин") ||
                 text.equals("✅ Начать поиск") ||
                 text.equals("❌ Отмена") ||
-                text.equals("📋 Информация") ||        // ← ДОБАВЛЯЕМ
-                text.equals("📞 Контакты") ||         // ← ДОБАВЛЯЕМ
+                text.equals("📋 Информация") ||        /* ← ДОБАВЛЯЕМ*/
+                text.equals("📞 Контакты") ||         /* ← ДОБАВЛЯЕМ*/
                 text.startsWith("✏️ Ключ ");
     }
 
@@ -414,7 +414,7 @@ public class MessageHandlerImpl implements MessageHandler {
                 UserStateManager.STATE_SUBSCRIPTION_MENU.equals(state) ||
                 UserStateManager.STATE_SEARCH_IN_PROGRESS.equals(state) ||
 
-                // ДОБАВЛЯЕМ СОСТОЯНИЯ ВВОДА ПОИСКА:
+                /* ДОБАВЛЯЕМ СОСТОЯНИЯ ВВОДА ПОИСКА:*/
                 UserStateManager.STATE_WAITING_SEARCH_QUERY.equals(state) ||
                 UserStateManager.STATE_WAITING_SEARCH_CONFIRMATION.equals(state)
 

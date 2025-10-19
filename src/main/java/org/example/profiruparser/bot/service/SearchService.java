@@ -137,7 +137,7 @@ public class SearchService {
         telegramService.sendMessage(message);
     }
 
-    // ИСПРАВЛЕННЫЙ МЕТОД - принимает chatId для получения пользователя и драйвера
+    /* ИСПРАВЛЕННЫЙ МЕТОД - принимает chatId для получения пользователя и драйвера*/
     public boolean handleRespondToOrder(Long chatId, String orderId) {
         try {
             User user = userService.findByTelegramChatId(chatId);
@@ -146,7 +146,7 @@ public class SearchService {
                 return false;
             }
 
-            // Получаем драйвер из парсера
+            /* Получаем драйвер из парсера*/
             WebDriver driver = parser.getDriver();
             if (driver == null) {
                 log.error("No active driver available");

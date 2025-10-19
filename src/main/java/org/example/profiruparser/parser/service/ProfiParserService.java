@@ -10,6 +10,6 @@ public interface ProfiParserService {
     List<ProfiOrder> parseOrders(String keyword) throws Exception;
     void ensureLoggedIn(String login, String password) throws LoginException;
     void close();
-    WebDriver getDriver(); // ДОБАВИТЬ ЭТОТ МЕТОД
+    WebDriver getDriver(); /* ДОБАВИТЬ ЭТОТ МЕТОД*/
 
 }

@@ -48,7 +48,7 @@ public class PaymentAutoCheckService implements PaymentAutoCheckManager {
 
     private void checkPaymentStatus(String paymentId) {
         try {
-            // ИСПОЛЬЗУЕМ YooKassaClient напрямую
+            /* ИСПОЛЬЗУЕМ YooKassaClient напрямую*/
             var paymentStatus = yooKassaClient.getPayment(paymentId);
             log.debug("Auto-check payment {} status: {}", paymentId, paymentStatus.getStatus());
 
@@ -73,7 +73,7 @@ public class PaymentAutoCheckService implements PaymentAutoCheckManager {
             User user = userService.findByTelegramChatId(chatId);
             if (user == null) return;
 
-            // Получаем информацию о платеже напрямую через YooKassaClient
+            /* Получаем информацию о платеже напрямую через YooKassaClient*/
             var paymentInfo = yooKassaClient.getPayment(paymentId);
             String amount = paymentInfo.getAmount().getValue();
 

@@ -35,7 +35,7 @@ public class KeywordService {
 
             saveKeyword(chatId, keyNum - 1, text);
 
-            // ВОССТАНАВЛИВАЕМ состояние после сохранения ключа
+            /* ВОССТАНАВЛИВАЕМ состояние после сохранения ключа*/
             stateManager.setUserState(chatId, UserStateManager.STATE_AUTHORIZED_KEYWORDS);
 
         } catch (Exception e) {

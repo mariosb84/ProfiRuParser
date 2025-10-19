@@ -42,8 +42,8 @@ public class MenuFactoryImpl implements MenuFactory {
         row1.add(new KeyboardButton("🔑 Войти"));
 
         KeyboardRow row2 = new KeyboardRow();
-        row2.add(new KeyboardButton("📋 Информация"));    // ← ДОБАВЛЯЕМ
-        row2.add(new KeyboardButton("📞 Контакты"));      // ← ДОБАВЛЯЕМ
+        row2.add(new KeyboardButton("📋 Информация"));    /* ← ДОБАВЛЯЕМ*/
+        row2.add(new KeyboardButton("📞 Контакты"));      /* ← ДОБАВЛЯЕМ*/
 
         KeyboardRow row3 = new KeyboardRow();
         row2.add(new KeyboardButton("🏠 Старт"));
@@ -82,10 +82,10 @@ public class MenuFactoryImpl implements MenuFactory {
 
         KeyboardRow row3 = new KeyboardRow();
         row3.add(new KeyboardButton("⏰ Автопоиск"));
-        row3.add(new KeyboardButton("📋 Информация"));    // ← ДОБАВЛЯЕМ
+        row3.add(new KeyboardButton("📋 Информация"));    /* ← ДОБАВЛЯЕМ*/
 
         KeyboardRow row4 = new KeyboardRow();
-        row4.add(new KeyboardButton("📞 Контакты"));      // ← ДОБАВЛЯЕМ
+        row4.add(new KeyboardButton("📞 Контакты"));      /* ← ДОБАВЛЯЕМ*/
         row4.add(new KeyboardButton("🔄 Обновить"));
 
         KeyboardRow row5 = new KeyboardRow();
@@ -126,7 +126,7 @@ public class MenuFactoryImpl implements MenuFactory {
         row2.add(new KeyboardButton("12 месяцев - 2490₽"));
 
         /*KeyboardRow row3 = new KeyboardRow();
-        row3.add(new KeyboardButton("✅ Проверить оплату"));*/  // пока  убираем ручную проверку оплаты
+        row3.add(new KeyboardButton("✅ Проверить оплату"));*/  /* пока  убираем ручную проверку оплаты*/
 
         KeyboardRow row3 = new KeyboardRow();
         row3.add(new KeyboardButton("🔙 Назад"));

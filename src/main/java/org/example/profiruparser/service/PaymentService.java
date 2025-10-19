@@ -21,7 +21,7 @@ public class PaymentService {
     private final YooKassaClient yooKassaClient;
     private final SubscriptionService subscriptionService;
     private final UserServiceData userService;
-    private final PaymentAutoCheckManager autoCheckManager; // ← ИНТЕРФЕЙС вместо реализации
+    private final PaymentAutoCheckManager autoCheckManager; /* ← ИНТЕРФЕЙС вместо реализации*/
 
     @Value("${app.payment.return-url:https://t.me/your_bot}")
     private String returnUrl;
@@ -53,15 +53,15 @@ public class PaymentService {
         try {
             PaymentCreateRequest request = new PaymentCreateRequest();
 
-            // Правильный формат amount для ЮKassa
+            /* Правильный формат amount для ЮKassa*/
             PaymentCreateRequest.Amount amount = new PaymentCreateRequest.Amount();
-            amount.setValue(plan.getAmountValue()); // "299.00"
+            amount.setValue(plan.getAmountValue()); /* "299.00"*/
             amount.setCurrency("RUB");
             request.setAmount(amount);
 
             request.setDescription(plan.getDescription());
 
-            // Добавляем метаданные для вебхука
+            /* Добавляем метаданные для вебхука*/
             Map<String, String> metadata = new HashMap<>();
             metadata.put("chatId", chatId.toString());
             metadata.put("plan", plan.name());
@@ -71,21 +71,21 @@ public class PaymentService {
             }
             request.setMetadata(metadata);
 
-            // Настройка подтверждения
+            /* Настройка подтверждения*/
             PaymentCreateRequest.Confirmation confirmation = new PaymentCreateRequest.Confirmation();
-            // Убираем return_url для Telegram бота - он не нужен
-            // confirmation.setReturnUrl(returnUrl);
-           // confirmation.setReturnUrl("https://yookassa.ru"); // Просто сайт ЮKassa
-            //confirmation.setType("redirect"); // Должен быть "redirect" для получения URL
-            confirmation.setType("embedded"); // Для встраивания в приложение
+            /* Убираем return_url для Telegram бота - он не нужен*/
+            /* confirmation.setReturnUrl(returnUrl);*/
+           /* confirmation.setReturnUrl("https://yookassa.ru"); */  /* Просто сайт ЮKassa*/
+            /*confirmation.setType("redirect");*/ /* Должен быть "redirect" для получения URL*/
+            confirmation.setType("embedded"); /* Для встраивания в приложение*/
             request.setConfirmation(confirmation);
-            //request.setConfirmation(null);
+            /*request.setConfirmation(null);*/
 
             PaymentCreateResponse response = yooKassaClient.createPayment(request);
             log.info("Created payment for chatId: {}, plan: {}, paymentId: {}",
                     chatId, plan, response.getId());
 
-            // ЗАПУСКАЕМ АВТОМАТИЧЕСКУЮ ПРОВЕРКУ ← ДОБАВЛЯЕМ
+            /* ЗАПУСКАЕМ АВТОМАТИЧЕСКУЮ ПРОВЕРКУ ← ДОБАВЛЯЕМ*/
             autoCheckManager.startAutoCheck(response.getId(), chatId);
 
             return response;
@@ -112,7 +112,7 @@ public class PaymentService {
                         Long chatId = Long.parseLong(chatIdStr);
                         SubscriptionPlan plan = SubscriptionPlan.valueOf(planStr);
 
-                        // ВЫЗЫВАЕМ МЕТОД ДЛЯ АКТИВАЦИИ ПОДПИСКИ
+                        /* ВЫЗЫВАЕМ МЕТОД ДЛЯ АКТИВАЦИИ ПОДПИСКИ*/
                         activateSubscription(chatId, plan);
 
                         log.info("Subscription activated via webhook: chatId={}, plan={}", chatId, plan);
@@ -133,15 +133,15 @@ public class PaymentService {
                 return;
             }
 
-            // ИСПОЛЬЗУЕМ НОВЫЙ МЕТОД из SubscriptionService
+            /* ИСПОЛЬЗУЕМ НОВЫЙ МЕТОД из SubscriptionService*/
             boolean success = subscriptionService.activateSubscriptionViaPayment(user.getUsername(), plan);
 
             if (success) {
                 log.info("Subscription activated via payment for user: {}", user.getUsername());
 
-                // Здесь можно добавить отправку уведомления пользователю
-                // Но для этого нужен доступ к боту из PaymentService
-                // Пока просто логируем
+               /*  Здесь можно добавить отправку уведомления пользователю
+                 Но для этого нужен доступ к боту из PaymentService
+                 Пока просто логируем*/
 
             } else {
                 log.error("Failed to activate subscription for user: {}", user.getUsername());

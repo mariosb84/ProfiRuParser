@@ -73,11 +73,11 @@ public class AutoSearchService {
         try {
             int interval;
 
-            // ЕСЛИ НАЖАТА КНОПКА 30/60/120 МИН
+            /* ЕСЛИ НАЖАТА КНОПКА 30/60/120 МИН*/
             if (text.equals("30 мин") || text.equals("60 мин") || text.equals("120 мин")) {
                 interval = Integer.parseInt(text.replace(" мин", ""));
             } else {
-                // ЕСЛИ ВВЕДЕНО ЧИСЛО ВРУЧНУЮ
+                /* ЕСЛИ ВВЕДЕНО ЧИСЛО ВРУЧНУЮ*/
                 interval = Integer.parseInt(text);
             }
 
@@ -118,8 +118,8 @@ public class AutoSearchService {
 
         final String username = user.getUsername();
 
-        // ИЗМЕНЕНИЕ: delay = intervalMinutes, period = intervalMinutes
-        // Теперь первый поиск через intervalMinutes, а не сразу
+        /* ИЗМЕНЕНИЕ: delay = intervalMinutes, period = intervalMinutes
+         Теперь первый поиск через intervalMinutes, а не сразу*/
         ScheduledFuture<?> future = scheduler.scheduleAtFixedRate(() -> {
             try {
                 if (!subscriptionService.isSubscriptionActive(username)) {
@@ -133,7 +133,7 @@ public class AutoSearchService {
             } catch (Exception e) {
                 log.error("Ошибка в автопоиске: {}", e.getMessage());
             }
-        }, intervalMinutes, intervalMinutes, TimeUnit.MINUTES); // ← delay = intervalMinutes
+        }, intervalMinutes, intervalMinutes, TimeUnit.MINUTES); /* ← delay = intervalMinutes*/
 
         scheduledTasks.put(chatId, future);
         stateManager.setUserInterval(chatId, intervalMinutes);
@@ -203,15 +203,15 @@ public class AutoSearchService {
         boolean isAutoSearchRunning = scheduledTasks.containsKey(chatId);
 
         if (!isAutoSearchRunning) {
-            // ЕСЛИ АВТОПОИСК ВЫКЛЮЧЕН - ПРЕДЛАГАЕМ ВКЛЮЧИТЬ
+            /* ЕСЛИ АВТОПОИСК ВЫКЛЮЧЕН - ПРЕДЛАГАЕМ ВКЛЮЧИТЬ*/
             telegramService.sendMessage(chatId, "❌ Автопоиск выключен. Нажмите '🔔 Включить автопоиск' для настройки.");
             return;
         }
 
-        // ЕСЛИ АВТОПОИСК ВКЛЮЧЕН - МЕНЯЕМ ИНТЕРВАЛ
+        /* ЕСЛИ АВТОПОИСК ВКЛЮЧЕН - МЕНЯЕМ ИНТЕРВАЛ*/
         int interval = Integer.parseInt(text.replace(" мин", ""));
 
-        // ОСТАНАВЛИВАЕМ СТАРЫЙ И ЗАПУСКАЕМ С НОВЫМ ИНТЕРВАЛОМ
+        /* ОСТАНАВЛИВАЕМ СТАРЫЙ И ЗАПУСКАЕМ С НОВЫМ ИНТЕРВАЛОМ*/
         stopAutoSearch(chatId);
         startAutoSearch(chatId, interval);
 

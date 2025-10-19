@@ -14,7 +14,7 @@ public class OrderSortingService {
                 long weight1 = getDateWeight(o1.getCreationTime());
                 long weight2 = getDateWeight(o2.getCreationTime());
 
-                // Сортируем по УБЫВАНИЮ веса (новые первыми)
+                /* Сортируем по УБЫВАНИЮ веса (новые первыми)*/
                 return Long.compare(weight2, weight1);
             } catch (Exception e) {
                 return 0;
@@ -32,7 +32,7 @@ public class OrderSortingService {
 
         String lowerTime = time.toLowerCase().trim();
 
-        // 1. Сегодняшние заказы (самые высокие веса)
+        /* 1. Сегодняшние заказы (самые высокие веса)*/
         if (lowerTime.contains("только что")) {
             return 1_000_000;
         } else if (lowerTime.contains("минут")) {
@@ -42,12 +42,12 @@ public class OrderSortingService {
             int hours = extractNumber(lowerTime);
             return 1_000_000 - (hours * 60L);
 
-            // 2. Вчерашние заказы
+            /* 2. Вчерашние заказы*/
         } else if (lowerTime.contains("вчера")) {
             int timeMinutes = parseYesterdayTime(lowerTime);
             return 900_000 + timeMinutes;
 
-            // 3. Старые заказы (по датам)
+            /* 3. Старые заказы (по датам)*/
         } else {
             return parseAbsoluteDateWeight(lowerTime);
         }
@@ -78,10 +78,10 @@ public class OrderSortingService {
                 orderDate = LocalDate.of(today.getYear(), today.getMonth(), day);
             }
 
-            // Считаем разницу в днях от сегодняшней даты
+            /* Считаем разницу в днях от сегодняшней даты*/
             long daysBetween = ChronoUnit.DAYS.between(orderDate, today);
 
-            // Чем меньше дней прошло, тем больше вес
+            /* Чем меньше дней прошло, тем больше вес*/
             return Math.max(0, 100000 - daysBetween * 1000);
 
         } catch (Exception e) {

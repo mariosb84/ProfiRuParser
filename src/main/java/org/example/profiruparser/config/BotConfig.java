@@ -51,13 +51,13 @@ public class BotConfig {
         factory.setPackagesToScan("org.example.profiruparser");
         factory.setDataSource(ds);
 
-        // ↓↓↓ ДОБАВИТЬ ЭТО ↓↓↓
+        /* ↓↓↓ ДОБАВИТЬ ЭТО ↓↓↓*/
         factory.setJpaProperties(hibernateProperties());
 
         return factory;
     }
 
-    // ↓↓↓ ДОБАВИТЬ ЭТОТ МЕТОД ↓↓↓
+    /* ↓↓↓ ДОБАВИТЬ ЭТОТ МЕТОД ↓↓↓*/
     private Properties hibernateProperties() {
         Properties properties = new Properties();
         properties.setProperty("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect");
@@ -65,7 +65,7 @@ public class BotConfig {
         properties.setProperty("hibernate.show_sql", "false");
         properties.setProperty("hibernate.format_sql", "false");
 
-        // Важно для проблем с NULL и кэшированием:
+        /* Важно для проблем с NULL и кэшированием:*/
         properties.setProperty("hibernate.cache.use_second_level_cache", "false");
         properties.setProperty("hibernate.cache.use_query_cache", "false");
         properties.setProperty("hibernate.flushMode", "ALWAYS");
@@ -93,7 +93,7 @@ public class BotConfig {
         return new BCryptPasswordEncoder();
     }
 
-    // AppConfig.java (добавить в существующий)
+    /* AppConfig.java (добавить в существующий)*/
     @Bean
     public RestTemplate restTemplate() {
         return new RestTemplate();

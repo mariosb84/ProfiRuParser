@@ -5,7 +5,7 @@ import java.util.Map;
 
 @Data
 public class PaymentCreateRequest {
-    private Amount amount; // Изменяем с BigDecimal на Amount
+    private Amount amount; /* Изменяем с BigDecimal на Amount*/
     private String currency;
     private String description;
     private Map<String, String> metadata;
@@ -14,7 +14,7 @@ public class PaymentCreateRequest {
 
     @Data
     public static class Amount {
-        private String value; // Строка в формате "299.00"
+        private String value; /* Строка в формате "299.00"*/
         private String currency;
     }
 

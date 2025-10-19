@@ -49,7 +49,7 @@ public class ProfiParserServiceImpl implements ProfiParserService {
         webDriverManager.quitDriver();
     }
 
-    // ДОБАВИТЬ ЭТОТ МЕТОД
+    /* ДОБАВИТЬ ЭТОТ МЕТОД*/
     @Override
     public WebDriver getDriver() {
         return webDriverManager.getDriver();

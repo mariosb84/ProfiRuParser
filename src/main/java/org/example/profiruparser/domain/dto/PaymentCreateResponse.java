@@ -5,11 +5,11 @@ import lombok.Data;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @Data
-@JsonIgnoreProperties(ignoreUnknown = true) // ИГНОРИРУЕМ неизвестные поля
+@JsonIgnoreProperties(ignoreUnknown = true) /* ИГНОРИРУЕМ неизвестные поля*/
 public class PaymentCreateResponse {
     private String id;
     private String status;
-    private String description; // Добавляем недостающее поле
+    private String description; /* Добавляем недостающее поле*/
     private Amount amount;
     private Confirmation confirmation;
 

@@ -34,12 +34,12 @@ public class AuthenticationService {
         /* Проверяем, не существует ли пользователь*/
         if (userService.findUserByUsername(request.getUsername()) != null) {
             throw new UserAlreadyExistsException("User already exists: " + request.getUsername());
-           // return Optional.empty(); /* пользователь уже существует*/
+           /* return Optional.empty(); */ /* пользователь уже существует*/
         }
 
         User user = User.builder()
                 .username(request.getUsername())
-                /*.password(passwordEncoder.encode(request.getPassword()))*/    // убираем шифрование пароля для входа на сайт(храним в БД так как есть)
+                /*.password(passwordEncoder.encode(request.getPassword()))*/    /* убираем шифрование пароля для входа на сайт(храним в БД так как есть)*/
                 .password(request.getPassword())
                 .email("profiruexample@email.com")
                 .phone("+79210000000")
@@ -64,7 +64,7 @@ public class AuthenticationService {
         return Optional.ofNullable(userService.findUserByUsername(request.getUsername()));
     }*/
 
-    public Optional<User> signIn(SignInRequest request) {                                      //  ПРОСТАЯ проверка без Spring Security
+    public Optional<User> signIn(SignInRequest request) {                                      /*  ПРОСТАЯ проверка без Spring Security*/
 
         /* ПРОСТАЯ проверка без Spring Security*/
 
@@ -73,7 +73,7 @@ public class AuthenticationService {
             return Optional.of(user);
         }
         throw new InvalidCredentialsException("Invalid User login/password !!! : " + request.getUsername());
-        //return Optional.empty();
+        /*return Optional.empty();*/
     }
 
 }

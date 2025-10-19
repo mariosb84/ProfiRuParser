@@ -37,12 +37,12 @@ public class CallbackHandlerImpl implements CallbackHandler {
             }
         } catch (Exception e) {
             log.error("Error handling callback: {}", e.getMessage());
-            // Не отвечаем на колбэк если уже прошло много времени
+            /* Не отвечаем на колбэк если уже прошло много времени*/
         }
     }
 
     private void handleRespondCallback(CallbackQuery callbackQuery, String data, Long chatId) {
-        // СРАЗУ отвечаем на колбэк чтобы избежать "query is too old"
+        /* СРАЗУ отвечаем на колбэк чтобы избежать "query is too old"*/
         answerCallback(callbackQuery, "⏳ Отправляем отклик...");
 
         executor.submit(() -> {
@@ -50,7 +50,7 @@ public class CallbackHandlerImpl implements CallbackHandler {
                 String orderId = data.substring("respond_".length());
                 boolean success = searchService.handleRespondToOrder(chatId, orderId);
 
-                // Результат отправляем ОТДЕЛЬНЫМ сообщением
+                /* Результат отправляем ОТДЕЛЬНЫМ сообщением*/
                 if (success) {
                     telegramService.sendMessage(chatId, "✅ Отклик на заказ #" + orderId + " отправлен!");
                 } else {
@@ -64,7 +64,7 @@ public class CallbackHandlerImpl implements CallbackHandler {
     }
 
     private void handlePaymentCheckCallback(CallbackQuery callbackQuery, String data) {
-        // Для платежей тоже сразу отвечаем
+        /* Для платежей тоже сразу отвечаем*/
         answerCallback(callbackQuery, "⏳ Проверяем платеж...");
 
         executor.submit(() -> {
@@ -83,11 +83,11 @@ public class CallbackHandlerImpl implements CallbackHandler {
             AnswerCallbackQuery answer = new AnswerCallbackQuery();
             answer.setCallbackQueryId(callbackQuery.getId());
             answer.setText(text);
-            answer.setShowAlert(false); // Всплывающее уведомление
+            answer.setShowAlert(false); /* Всплывающее уведомление*/
             telegramService.answerCallback(answer);
         } catch (Exception e) {
             log.warn("Failed to answer callback (probably too old): {}", e.getMessage());
-            // Игнорируем ошибку "query is too old"
+            /* Игнорируем ошибку "query is too old"*/
         }
     }
 

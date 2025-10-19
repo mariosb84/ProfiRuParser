@@ -22,8 +22,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
 
-        // Здесь можно добавить логирование или другую логику
-        // но аутентификация не выполняется
+        /* Здесь можно добавить логирование или другую логику*/
+        /* но аутентификация не выполняется*/
 
         filterChain.doFilter(request, response);
     }

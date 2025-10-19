@@ -89,7 +89,7 @@ public class OrderExtractionService {
                 String title = element.getText().trim();
                 if (!title.isEmpty()) return title;
             } catch (Exception e) {
-                // continue
+                /* continue*/
             }
         }
         return "";
@@ -107,7 +107,7 @@ public class OrderExtractionService {
                 WebElement element = card.findElement(By.cssSelector(selector));
                 return cleanPrice(element.getText());
             } catch (Exception e) {
-                // continue
+                /* continue*/
             }
         }
         return "0";
@@ -125,7 +125,7 @@ public class OrderExtractionService {
                 WebElement element = card.findElement(By.cssSelector(selector));
                 return element.getText();
             } catch (Exception e) {
-                // continue
+                /* continue*/
             }
         }
         return "";
@@ -145,7 +145,7 @@ public class OrderExtractionService {
                 WebElement timeElement = card.findElement(By.cssSelector(selector));
                 return timeElement.getText().trim();
             } catch (Exception e) {
-                // continue
+                /* continue*/
             }
         }
         return "Неизвестно";

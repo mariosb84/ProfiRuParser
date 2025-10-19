@@ -30,12 +30,12 @@ public class SubscriptionService {
         LocalDateTime currentEndDate = user.getSubscriptionEndDate();
         LocalDateTime newEndDate;
 
-        // ЕСЛИ ПОДПИСКА УЖЕ АКТИВНА - ПРОДЛЕВАЕМ ОТ ТЕКУЩЕЙ ДАТЫ ОКОНЧАНИЯ
+        /* ЕСЛИ ПОДПИСКА УЖЕ АКТИВНА - ПРОДЛЕВАЕМ ОТ ТЕКУЩЕЙ ДАТЫ ОКОНЧАНИЯ*/
         if (currentEndDate != null && currentEndDate.isAfter(LocalDateTime.now())) {
             newEndDate = currentEndDate.plusDays(days);
             logger.debug("Extending subscription from {} to {}", currentEndDate, newEndDate);
         } else {
-            // ЕСЛИ ПОДПИСКИ НЕТ ИЛИ ОНА ИСТЕКЛА - НАЧИНАЕМ С ТЕКУЩЕЙ ДАТЫ
+            /* ЕСЛИ ПОДПИСКИ НЕТ ИЛИ ОНА ИСТЕКЛА - НАЧИНАЕМ С ТЕКУЩЕЙ ДАТЫ*/
             newEndDate = LocalDateTime.now().plusDays(days);
             logger.debug("Starting new subscription until: {}", newEndDate);
         }
@@ -51,7 +51,7 @@ public class SubscriptionService {
         return false;
     }
 
-    // НОВЫЙ МЕТОД: Активация подписки через платеж (для webhook)
+    /* НОВЫЙ МЕТОД: Активация подписки через платеж (для webhook)*/
     @Transactional
     public boolean activateSubscriptionViaPayment(String username, PaymentService.SubscriptionPlan plan) {
         int days = plan == PaymentService.SubscriptionPlan.MONTHLY ? 30 : 365;
@@ -72,7 +72,7 @@ public class SubscriptionService {
         return date;
     }
 
-    // НОВЫЙ МЕТОД: Получить оставшееся время подписки в днях
+    /* НОВЫЙ МЕТОД: Получить оставшееся время подписки в днях*/
     public long getDaysRemaining(String username) {
         User user = userService.findUserByUsername(username);
         if (user == null || user.getSubscriptionEndDate() == null) {
@@ -83,13 +83,13 @@ public class SubscriptionService {
         LocalDateTime endDate = user.getSubscriptionEndDate();
 
         if (endDate.isBefore(now)) {
-            return 0; // Подписка истекла
+            return 0; /* Подписка истекла*/
         }
 
         return ChronoUnit.DAYS.between(now, endDate);
     }
 
-    // НОВЫЙ МЕТОД: Получить статус подписки для отображения
+    /* НОВЫЙ МЕТОД: Получить статус подписки для отображения*/
     public String getSubscriptionStatus(String username) {
         if (!isSubscriptionActive(username)) {
             return "❌ Подписка не активна";
