@@ -6,6 +6,7 @@ import org.example.profiruparser.domain.dto.ProfiOrder;
 import org.example.profiruparser.domain.model.User;
 import org.example.profiruparser.parser.service.ProfiParserService;
 import org.example.profiruparser.responder.ProfiResponder;
+import org.example.profiruparser.service.SeenOrderService;
 import org.example.profiruparser.service.SubscriptionService;
 import org.example.profiruparser.service.UserServiceData;
 import org.openqa.selenium.WebDriver;
@@ -16,8 +17,10 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKe
 
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -30,6 +33,7 @@ public class SearchService {
     private final SubscriptionService subscriptionService;
     private final TelegramService telegramService;
     private final UserStateManager stateManager;
+    private final SeenOrderService seenOrderService; // ДОБАВЛЯЕМ
 
     private final ExecutorService executor = Executors.newFixedThreadPool(4);
 
@@ -48,11 +52,19 @@ public class SearchService {
                 parser.ensureLoggedIn(user.getUsername(), user.getPassword());
                 List<ProfiOrder> orders = parser.parseOrders(query);
 
-                if (orders.isEmpty()) {
+                /* ФИЛЬТРАЦИЯ: оставляем только новые заказы*/
+                List<ProfiOrder> newOrders = filterNewOrders(user.getId(), orders);
+
+                if (newOrders.isEmpty()) {
                     telegramService.sendMessage(chatId, "❌ Ничего не найдено");
                 } else {
-                    telegramService.sendMessage(chatId, "✅ Найдено: " + orders.size() + " заказов");
-                    orders.forEach(order -> sendOrderCard(chatId, order));
+                    telegramService.sendMessage(chatId, "✅ Найдено: " + newOrders.size() + " заказов");
+
+                    /* Сохраняем как просмотренные*/
+                    seenOrderService.markOrdersAsSeen(user.getId(),
+                            newOrders.stream().map(ProfiOrder::getId).collect(Collectors.toList()));
+
+                    newOrders.forEach(order -> sendOrderCard(chatId, order));
                 }
             } catch (Exception e) {
                 telegramService.sendMessage(chatId, "❌ Ошибка поиска: " + e.getMessage());
@@ -93,11 +105,19 @@ public class SearchService {
                     Thread.sleep(1000);
                 }
 
-                if (allOrders.isEmpty()) {
+                /* ФИЛЬТРАЦИЯ: оставляем только новые заказы*/
+                List<ProfiOrder> newOrders = filterNewOrders(user.getId(), allOrders.stream().toList());
+
+                if (newOrders.isEmpty()) {
                     telegramService.sendMessage(chatId, "❌ По ключам ничего не найдено");
                 } else {
-                    telegramService.sendMessage(chatId, "✅ Найдено: " + allOrders.size() + " заказов");
-                    allOrders.forEach(order -> sendOrderCard(chatId, order));
+                    telegramService.sendMessage(chatId, "✅ Найдено: " + newOrders.size() + " заказов");
+
+                    /* Сохраняем как просмотренные*/
+                    seenOrderService.markOrdersAsSeen(user.getId(),
+                            newOrders.stream().map(ProfiOrder::getId).collect(Collectors.toList()));
+
+                    newOrders.forEach(order -> sendOrderCard(chatId, order));
                 }
             } catch (Exception e) {
                 telegramService.sendMessage(chatId, "❌ Ошибка поиска: " + e.getMessage());
@@ -105,9 +125,21 @@ public class SearchService {
         });
     }
 
+    /* НОВЫЙ МЕТОД: фильтрация просмотренных заказов*/
+    private List<ProfiOrder> filterNewOrders(Long userId, List<ProfiOrder> orders) {
+        Set<String> seenOrderIds = seenOrderService.getSeenOrderIds(userId);
+
+        return orders.stream()
+                .filter(order -> !seenOrderIds.contains(order.getId()))
+                .collect(Collectors.toList());
+    }
+
     private void sendOrderCard(Long chatId, ProfiOrder order) {
+        String orderUrl = "https://profi.ru/backoffice/n.php?o=" + order.getId();
+
         String text = String.format(
-                "🆔 Заказ #%s\n📌 %s\n💰 %s\n📅 %s\n📝 %s",
+                "🆔 Заказ #%s\n📌 %s\n💰 %s\n📅 %s\n📝 %s\n\n⚠️ *Перед откликом убедитесь," +
+                        " что вы авторизованы в Profi.ru в браузере! Либо придется первый раз авторизоваться.*",
                 order.getId(), order.getTitle(), order.getPrice(), order.getCreationTime(),
                 order.getDescription().length() > 1000 ?
                         order.getDescription().substring(0, 1000) + "..." : order.getDescription()
@@ -115,29 +147,24 @@ public class SearchService {
 
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
         markup.setKeyboard(List.of(
-                List.of(InlineKeyboardButton.builder()
-                        .text("Откликнуться")
-                        .callbackData("respond_" + order.getId())
-                        .build())
+                List.of(
+                        InlineKeyboardButton.builder()
+                                .text("📱 Откликнуться")
+                                .url(orderUrl)
+                                .build()
+                )
         ));
 
         SendMessage message = SendMessage.builder()
                 .chatId(chatId.toString())
                 .text(text)
                 .replyMarkup(markup)
+                .parseMode("Markdown")  /* Для жирного текста*/
                 .build();
-
-        try {
-            Thread.sleep(300);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return;
-        }
 
         telegramService.sendMessage(message);
     }
 
-    /* ИСПРАВЛЕННЫЙ МЕТОД - принимает chatId для получения пользователя и драйвера*/
     public boolean handleRespondToOrder(Long chatId, String orderId) {
         try {
             User user = userService.findByTelegramChatId(chatId);
@@ -146,7 +173,6 @@ public class SearchService {
                 return false;
             }
 
-            /* Получаем драйвер из парсера*/
             WebDriver driver = parser.getDriver();
             if (driver == null) {
                 log.error("No active driver available");
@@ -162,4 +188,3 @@ public class SearchService {
     }
 
 }
-
