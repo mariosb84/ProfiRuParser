@@ -29,7 +29,10 @@ public class MenuFactoryImpl implements MenuFactory {
     public SendMessage createWelcomeMenu(Long chatId) {
         SendMessage message = new SendMessage();
         message.setChatId(chatId.toString());
-        message.setText("👋 Добро пожаловать!\n\nВыберите действие:");
+        message.setText("👋 Добро пожаловать!\n\n"
+                + TextConstants.START_TEXT.getText()
+                + "\n\nВыберите действие:"
+        );
 
         ReplyKeyboardMarkup keyboard = new ReplyKeyboardMarkup();
         keyboard.setResizeKeyboard(true);
@@ -86,7 +89,7 @@ public class MenuFactoryImpl implements MenuFactory {
 
         KeyboardRow row4 = new KeyboardRow();
         row4.add(new KeyboardButton("📞 Контакты"));      /* ← ДОБАВЛЯЕМ*/
-        row4.add(new KeyboardButton("🔄 Обновить"));
+        row4.add(new KeyboardButton("🏠 Главное меню"));
 
         KeyboardRow row5 = new KeyboardRow();
         row4.add(new KeyboardButton("❌ Выйти"));

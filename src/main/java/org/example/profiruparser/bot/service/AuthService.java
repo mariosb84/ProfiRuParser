@@ -11,6 +11,8 @@ import org.example.profiruparser.service.UserServiceData;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
@@ -55,23 +57,42 @@ public class AuthService {
         stateManager.removeTempUsername(chatId);
 
         if (isRegistration) {
-            handleRegistration(chatId, username, password);
+            handleRegistrationAndAutoLogin(chatId, username, password); /* ИЗМЕНЕНО*/
         } else {
             handleLogin(chatId, username, password);
         }
     }
 
-    private void handleRegistration(Long chatId, String username, String password) {
+    /* НОВЫЙ МЕТОД: регистрация + автоматическая авторизация*/
+    private void handleRegistrationAndAutoLogin(Long chatId, String username, String password) {
         SignUpRequest request = new SignUpRequest();
         request.setUsername(username);
         request.setPassword(password);
 
         if (authenticationService.signUp(request).isPresent()) {
-            telegramService.sendMessage(chatId, "✅ Регистрация успешна! Теперь войдите: /login");
+            SignInRequest loginRequest = new SignInRequest();
+            loginRequest.setUsername(username);
+            loginRequest.setPassword(password);
+
+            Optional<User> user = authenticationService.signIn(loginRequest);
+            if (user.isPresent()) {
+                userService.updateTelegramChatId(username, chatId);
+                stateManager.setUserState(chatId, UserStateManager.STATE_AUTHORIZED_MAIN);
+                telegramService.sendMessage(chatId, "✅ Регистрация и авторизация успешны!");
+
+                // АСИНХРОННО С ЗАДЕРЖКОЙ
+                CompletableFuture.delayedExecutor(500, TimeUnit.MILLISECONDS)
+                        .execute(() -> {
+                            telegramService.sendMessage(menuFactory.createMainMenu(chatId));
+                        });
+            } else {
+                telegramService.sendMessage(chatId, "❌ Регистрация успешна, но авторизация не удалась. Используйте /login");
+                stateManager.removeUserState(chatId);
+            }
         } else {
             telegramService.sendMessage(chatId, "❌ Ошибка регистрации.");
+            stateManager.removeUserState(chatId);
         }
-        stateManager.removeUserState(chatId);
     }
 
     private void handleLogin(Long chatId, String username, String password) {

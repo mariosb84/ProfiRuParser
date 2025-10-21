@@ -67,7 +67,7 @@ public class MessageHandlerImpl implements MessageHandler {
         }
 
         /* ГЛОБАЛЬНЫЕ КНОПКИ МЕНЮ - ВСЕГДА ВОЗВРАЩАЮТ В ПРАВИЛЬНОЕ МЕНЮ*/
-        if (text.equals("🔙 Назад") || text.equals("🔄 Обновить")) {
+        if (text.equals("🔙 Назад") || text.equals("🏠 Главное меню")) {
             /* ВОЗВРАЩАЕМ В ПРАВИЛЬНОЕ МЕНЮ В ЗАВИСИМОСТИ ОТ АВТОРИЗАЦИИ*/
             if (isUserAuthorized(chatId)) {
                 sendMainMenu(chatId);
@@ -83,7 +83,8 @@ public class MessageHandlerImpl implements MessageHandler {
         if (userState.equals(UserStateManager.STATE_WAITING_SEARCH_QUERY)) {
             if (isMenuCommand(text)) {
                 telegramService.sendMessage(chatId,
-                        "❌ Завершите ввод поискового запроса или нажмите '🔙 Назад' для отмены");
+                        /*"❌ Завершите ввод поискового запроса или нажмите '🔙 Назад' для отмены");*/
+                          "❌ Завершите ввод поискового запроса или нажмите '🏠 Главное меню' для отмены");
                 return true;
             }
         }
@@ -236,7 +237,7 @@ public class MessageHandlerImpl implements MessageHandler {
 
     private void handleStartCommand(Long chatId) {
         stateManager.clearUserData(chatId);
-        paymentHandler.checkAutoPayment(chatId);
+        /*paymentHandler.checkAutoPayment(chatId);*/  /* УБИРАЕМ ПОКА ЭТОТ МЕТОД ПРИ СТАРТЕ*/
 
         if (isUserAuthorized(chatId)) {
             sendMainMenu(chatId);
@@ -329,7 +330,7 @@ public class MessageHandlerImpl implements MessageHandler {
             case "🔙 Назад":
                 sendMainMenu(chatId);
                 break;
-            case "🔄 Обновить":
+            case "🏠 Главное меню":
                 sendMainMenu(chatId);
                 break;
 
@@ -381,7 +382,7 @@ public class MessageHandlerImpl implements MessageHandler {
                 text.equals("12 месяцев - 2490₽") ||
                 text.equals("🧹 Очистить все") ||
                 text.equals("🔙 Назад") ||
-                text.equals("🔄 Обновить") ||
+                text.equals("🏠 Главное меню") ||
                 text.equals("⏰ Автопоиск") ||
                 text.equals("🔔 Включить автопоиск") ||
                 text.equals("🔕 Выключить автопоиск") ||
@@ -464,3 +465,4 @@ public class MessageHandlerImpl implements MessageHandler {
     }
 
 }
+
