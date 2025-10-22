@@ -10,6 +10,7 @@ import org.example.profiruparser.service.SeenOrderService;
 import org.example.profiruparser.service.SubscriptionService;
 import org.example.profiruparser.service.UserServiceData;
 import org.openqa.selenium.WebDriver;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
@@ -26,6 +27,9 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class SearchService {
+
+    @Value("${orderUrl}")
+    private String orderUrl ;
 
     private final ProfiParserService parser;
     private final ProfiResponder responder;
@@ -135,7 +139,8 @@ public class SearchService {
     }
 
     private void sendOrderCard(Long chatId, ProfiOrder order) {
-        String orderUrl = "https://profi.ru/backoffice/n.php?o=" + order.getId();
+        /*String orderUrl = "https://profi.ru/backoffice/n.php?o=" + order.getId();*/ /* меняем на @Value*/
+        String orderUrl = this.orderUrl + order.getId();
 
         String text = String.format(
                 "🆔 Заказ #%s\n📌 %s\n💰 %s\n📅 %s\n📝 %s\n\n⚠️ *Перед откликом убедитесь," +

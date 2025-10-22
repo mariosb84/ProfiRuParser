@@ -8,6 +8,7 @@ import org.example.profiruparser.domain.model.User;
 import org.example.profiruparser.parser.service.ProfiParserService;
 import org.example.profiruparser.service.SubscriptionService;
 import org.example.profiruparser.service.UserServiceData;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Message;
@@ -23,6 +24,15 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class MessageHandlerImpl implements MessageHandler {
+
+    @Value("${app.subscription.monthly.price}")
+    private String monthlyPrice;
+
+    @Value("${app.subscription.yearly.price}")
+    private String yearlyPrice;
+
+    @Value("${currencySecond}")
+    private String currencySecond;
 
     private final AuthService authService;
     private final SearchService searchService;
@@ -300,76 +310,53 @@ public class MessageHandlerImpl implements MessageHandler {
             return;
         }
 
-        switch (text) {
-            case "🔍 Ручной поиск":
-                stateManager.setUserState(chatId, UserStateManager.STATE_WAITING_SEARCH_QUERY);
-                telegramService.sendMessage(chatId, "Введите поисковый запрос:");
-                break;
-            case "⚙️ Ключевые слова":
-                stateManager.setUserState(chatId, UserStateManager.STATE_AUTHORIZED_KEYWORDS);
-                List<String> keywords = keywordService.getKeywordsForDisplay(chatId);
-                telegramService.sendMessage(menuFactory.createKeywordsMenu(chatId, keywords));
-                break;
-            case "🚀 Поиск по ключам":
-                searchService.searchByKeywords(chatId);
-                break;
-            case "💳 Оплатить подписку":
-                sendSubscriptionMenu(chatId);
-                break;
-            case "1 месяц - 299₽":
-                paymentHandler.handleSubscriptionPayment(chatId, "MONTHLY");
-                break;
-            case "12 месяцев - 2490₽":
-                paymentHandler.handleSubscriptionPayment(chatId, "YEARLY");
-                break;
-            case "🧹 Очистить все":
-                keywordService.clearAllKeywords(chatId);
-                List<String> clearedKeywords = keywordService.getKeywordsForDisplay(chatId);
-                telegramService.sendMessage(menuFactory.createKeywordsMenu(chatId, clearedKeywords));
-                break;
-            case "🔙 Назад":
-                sendMainMenu(chatId);
-                break;
-            case "🏠 Главное меню":
-                sendMainMenu(chatId);
-                break;
-
-            case "📋 Информация":                    /* ← ДОБАВЛЯЕМ*/
-                sendInfoMenu(chatId);
-                break;
-            case "📞 Контакты":                     /* ← ДОБАВЛЯЕМ*/
-                sendContactsMenu(chatId);
-                break;
-
-            case "⏰ Автопоиск":
-                autoSearchService.handleAutoSearchCommand(chatId);
-                break;
-            case "🔔 Включить автопоиск":
-                autoSearchService.handleEnableAutoSearch(chatId);
-                break;
-            case "🔕 Выключить автопоиск":
-                autoSearchService.handleDisableAutoSearch(chatId);
-                break;
-            case "30 мин":
-            case "60 мин":
-            case "120 мин":
-                /* ВСЕГДА ОБРАБАТЫВАЕМ КАК КОМАНДУ МЕНЮ*/
-                autoSearchService.handleIntervalButton(chatId, text);
-                break;
-            case "✅ Начать поиск":
-            case "❌ Отмена":
-                /* Эти кнопки обрабатываются выше в состоянии подтверждения*/
-                break;
-            case "❌ Выйти":
-                authService.handleLogout(chatId);
-                break;
-            default:
-                if (text.startsWith("✏️ Ключ ")) {
-                    keywordService.handleEditKeywordCommand(chatId, text);
-                } else {
-                    telegramService.sendMessage(chatId, "Неизвестная команда");
-                }
+        if ("🔍 Ручной поиск".equals(text)) {
+            stateManager.setUserState(chatId, UserStateManager.STATE_WAITING_SEARCH_QUERY);
+            telegramService.sendMessage(chatId, "Введите поисковый запрос:");
+        } else if ("⚙️ Ключевые слова".equals(text)) {
+            stateManager.setUserState(chatId, UserStateManager.STATE_AUTHORIZED_KEYWORDS);
+            List<String> keywords = keywordService.getKeywordsForDisplay(chatId);
+            telegramService.sendMessage(menuFactory.createKeywordsMenu(chatId, keywords));
+        } else if ("🚀 Поиск по ключам".equals(text)) {
+            searchService.searchByKeywords(chatId);
+        } else if ("💳 Оплатить подписку".equals(text)) {
+            sendSubscriptionMenu(chatId);
+        } else if (("1 месяц - " + this.monthlyPrice + this.currencySecond).equals(text)) {                             /* меняем на @Value*/
+            paymentHandler.handleSubscriptionPayment(chatId, "MONTHLY");
+        } else if (("12 месяцев - " + this.yearlyPrice + this.currencySecond).equals(text)) {                          /* меняем на @Value*/
+            paymentHandler.handleSubscriptionPayment(chatId, "YEARLY");
+        } else if ("🧹 Очистить все".equals(text)) {
+            keywordService.clearAllKeywords(chatId);
+            List<String> clearedKeywords = keywordService.getKeywordsForDisplay(chatId);
+            telegramService.sendMessage(menuFactory.createKeywordsMenu(chatId, clearedKeywords));
+        } else if ("🔙 Назад".equals(text)) {
+            sendMainMenu(chatId);
+        } else if ("🏠 Главное меню".equals(text)) {
+            sendMainMenu(chatId);
+        } else if ("📋 Информация".equals(text)) {                    /* ← ДОБАВЛЯЕМ*/
+            sendInfoMenu(chatId);
+        } else if ("📞 Контакты".equals(text)) {                     /* ← ДОБАВЛЯЕМ*/
+            sendContactsMenu(chatId);
+        } else if ("⏰ Автопоиск".equals(text)) {
+            autoSearchService.handleAutoSearchCommand(chatId);
+        } else if ("🔔 Включить автопоиск".equals(text)) {
+            autoSearchService.handleEnableAutoSearch(chatId);
+        } else if ("🔕 Выключить автопоиск".equals(text)) {
+            autoSearchService.handleDisableAutoSearch(chatId);
+        } else if ("30 мин".equals(text) || "60 мин".equals(text) || "120 мин".equals(text)) {
+            /* ВСЕГДА ОБРАБАТЫВАЕМ КАК КОМАНДУ МЕНЮ*/
+            autoSearchService.handleIntervalButton(chatId, text);
+        } else if ("✅ Начать поиск".equals(text) || "❌ Отмена".equals(text)) {
+            /* Эти кнопки обрабатываются выше в состоянии подтверждения*/
+            // ничего не делаем, т.к. обрабатывается в другом месте
+        } else if ("❌ Выйти".equals(text)) {
+            authService.handleLogout(chatId);
+        } else if (text.startsWith("✏️ Ключ ")) {
+            keywordService.handleEditKeywordCommand(chatId, text);
+        } else {
+            telegramService.sendMessage(chatId, "Неизвестная команда");
         }
+
     }
 
     /* ДОБАВИТЬ МЕТОД ПРОВЕРКИ КОМАНД МЕНЮ*/
@@ -378,8 +365,13 @@ public class MessageHandlerImpl implements MessageHandler {
                 text.equals("⚙️ Ключевые слова") ||
                 text.equals("🚀 Поиск по ключам") ||
                 text.equals("💳 Оплатить подписку") ||
-                text.equals("1 месяц - 299₽") ||
-                text.equals("12 месяцев - 2490₽") ||
+
+                /*text.equals("1 месяц - 299₽") ||*/ /* меняем на @Value*/
+                text.equals("1 месяц - " + this.monthlyPrice + this.currencySecond) ||
+
+                /*text.equals("12 месяцев - 2490₽") ||*/ /* меняем на @Value*/
+                text.equals("12 месяцев - " + this.yearlyPrice + this.currencySecond) ||
+
                 text.equals("🧹 Очистить все") ||
                 text.equals("🔙 Назад") ||
                 text.equals("🏠 Главное меню") ||
@@ -424,7 +416,11 @@ public class MessageHandlerImpl implements MessageHandler {
 
     private boolean isFreeCommand(String text) {
         return List.of(
-                "💳 Оплатить подписку", "1 месяц - 299₽", "12 месяцев - 2490₽",
+
+                /*"💳 Оплатить подписку", "1 месяц - 299₽", "12 месяцев - 2490₽",*/ /* меняем на @Value*/
+                "💳 Оплатить подписку", "1 месяц - " + this.monthlyPrice + this.currencySecond,
+                "12 месяцев - " + this.yearlyPrice + this.currencySecond,
+
                 "✅ Проверить оплату", "🔙 Назад", "🏠 Старт",
                 "📝 Регистрация", "🔑 Войти", "❌ Выйти"
         ).contains(text);
@@ -465,4 +461,5 @@ public class MessageHandlerImpl implements MessageHandler {
     }
 
 }
+
 

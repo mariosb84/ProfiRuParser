@@ -6,6 +6,7 @@ import org.example.profiruparser.bot.constants.TextConstants;
 import org.example.profiruparser.domain.model.User;
 import org.example.profiruparser.service.SubscriptionService;
 import org.example.profiruparser.service.UserServiceData;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
@@ -21,6 +22,15 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class MenuFactoryImpl implements MenuFactory {
+
+    @Value("${app.subscription.monthly.price}")
+    private String monthlyPrice;
+
+    @Value("${app.subscription.yearly.price}")
+    private String yearlyPrice;
+
+    @Value("${currencySecond}")
+    private String currencySecond;
 
     private final UserServiceData userService;
     private final SubscriptionService subscriptionService;
@@ -123,10 +133,14 @@ public class MenuFactoryImpl implements MenuFactory {
         List<KeyboardRow> rows = new ArrayList<>();
 
         KeyboardRow row1 = new KeyboardRow();
-        row1.add(new KeyboardButton("1 месяц - 299₽"));
+
+       /* row1.add(new KeyboardButton("1 месяц - 299₽"));*/ /* меняем на @Value*/
+        row1.add(new KeyboardButton("1 месяц - " + this.monthlyPrice + this.currencySecond));
 
         KeyboardRow row2 = new KeyboardRow();
-        row2.add(new KeyboardButton("12 месяцев - 2490₽"));
+
+        /*row2.add(new KeyboardButton("12 месяцев - 2490₽"));*/ /* меняем на @Value*/
+        row2.add(new KeyboardButton("12 месяцев - " + this.yearlyPrice + this.currencySecond));
 
         /*KeyboardRow row3 = new KeyboardRow();
         row3.add(new KeyboardButton("✅ Проверить оплату"));*/  /* пока  убираем ручную проверку оплаты*/

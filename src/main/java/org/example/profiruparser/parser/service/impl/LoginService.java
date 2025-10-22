@@ -8,11 +8,16 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service("parserLoginService")
 @Qualifier("parserLoginService")
 public class LoginService {
+
+    @Value("${webDriverManagerGetDriver}")
+    private String webDriverManagerGetDriver;
+
     private final WebDriverManager webDriverManager;
     @Getter
     private boolean loggedIn = false;
@@ -39,7 +44,8 @@ public class LoginService {
     private void performFullLogin(String login, String password) throws Exception {
         System.out.println("=== STARTING LOGIN ===");
 
-        webDriverManager.getDriver().get("https://profi.ru/backoffice/a.php");
+        /*webDriverManager.getDriver().get("https://profi.ru/backoffice/a.php");*/ /* меняем на @Value*/
+        webDriverManager.getDriver().get(this.webDriverManagerGetDriver);
         Thread.sleep(5000);
 
         try {

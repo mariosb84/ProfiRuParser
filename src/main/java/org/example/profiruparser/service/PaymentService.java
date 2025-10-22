@@ -23,40 +23,60 @@ public class PaymentService {
     private final UserServiceData userService;
     private final PaymentAutoCheckManager autoCheckManager; /* ← ИНТЕРФЕЙС вместо реализации*/
 
-    @Value("${app.payment.return-url:https://t.me/your_bot}")
+    @Value("${app.payment.return-url}")
     private String returnUrl;
 
-    public enum SubscriptionPlan {
-        MONTHLY("299.00", "Подписка на 1 месяц"),
-        YEARLY("2490.00", "Подписка на 12 месяцев");
+    @Value("${amountMonthly}")
+    private String amountMonthly;
 
-        private final String amount;
-        @Getter
+    @Value("${amountYearly}")
+    private String amountYearly;
+
+    @Value("${amountSetCurrency}")
+    private String amountSetCurrency;
+
+    @Getter
+    public enum SubscriptionPlan {
+        /*MONTHLY("299.00", "Подписка на 1 месяц"),
+        YEARLY("2490.00", "Подписка на 12 месяцев");*/ /* меняем на @Value*/
+
+        MONTHLY("Подписка на 1 месяц"),
+        YEARLY("Подписка на 12 месяцев");
+
         private final String description;
 
-        SubscriptionPlan(String amount, String description) {
-            this.amount = amount;
+        SubscriptionPlan(String description) {
             this.description = description;
         }
+    }
 
-        public String getAmountValue() {
-            return amount;
-        }
+    /* НОВЫЙ МЕТОД: получение цены из конфига*/
+    public String getPrice(SubscriptionPlan plan) {
+        return switch (plan) {
+            case MONTHLY -> amountMonthly;
+            case YEARLY -> amountYearly;
+        };
+    }
 
-        public BigDecimal getAmount() {
-            return new BigDecimal(amount);
-        }
-
+    /* НОВЫЙ МЕТОД: получение BigDecimal цены*/
+    public BigDecimal getPriceAsBigDecimal(SubscriptionPlan plan) {
+        return new BigDecimal(getPrice(plan));
     }
 
     public PaymentCreateResponse createPayment(Long chatId, SubscriptionPlan plan) {
         try {
             PaymentCreateRequest request = new PaymentCreateRequest();
 
+            /* ИСПОЛЬЗУЕМ ЦЕНУ ИЗ КОНФИГА*/
+            String price = getPrice(plan);
+
             /* Правильный формат amount для ЮKassa*/
             PaymentCreateRequest.Amount amount = new PaymentCreateRequest.Amount();
-            amount.setValue(plan.getAmountValue()); /* "299.00"*/
-            amount.setCurrency("RUB");
+            amount.setValue(price);  /* значение из конфига*/
+
+            /*amount.setCurrency("RUB");*/ /*меняем на @Value*/
+            amount.setCurrency(this.amountSetCurrency);
+
             request.setAmount(amount);
 
             request.setDescription(plan.getDescription());
@@ -75,15 +95,15 @@ public class PaymentService {
             PaymentCreateRequest.Confirmation confirmation = new PaymentCreateRequest.Confirmation();
             /* Убираем return_url для Telegram бота - он не нужен*/
             /* confirmation.setReturnUrl(returnUrl);*/
-           /* confirmation.setReturnUrl("https://yookassa.ru"); */  /* Просто сайт ЮKassa*/
+            /* confirmation.setReturnUrl("https://yookassa.ru"); */  /* Просто сайт ЮKassa*/
             /*confirmation.setType("redirect");*/ /* Должен быть "redirect" для получения URL*/
             confirmation.setType("embedded"); /* Для встраивания в приложение*/
             request.setConfirmation(confirmation);
             /*request.setConfirmation(null);*/
 
             PaymentCreateResponse response = yooKassaClient.createPayment(request);
-            log.info("Created payment for chatId: {}, plan: {}, paymentId: {}",
-                    chatId, plan, response.getId());
+            log.info("Created payment for chatId: {}, plan: {}, amount: {}, paymentId: {}",
+                    chatId, plan, price, response.getId());
 
             /* ЗАПУСКАЕМ АВТОМАТИЧЕСКУЮ ПРОВЕРКУ ← ДОБАВЛЯЕМ*/
             autoCheckManager.startAutoCheck(response.getId(), chatId);
@@ -151,7 +171,6 @@ public class PaymentService {
             log.error("Error activating subscription: {}", e.getMessage());
         }
     }
-
 
     public PaymentCreateResponse getPaymentStatus(String paymentId) {
         return yooKassaClient.getPayment(paymentId);

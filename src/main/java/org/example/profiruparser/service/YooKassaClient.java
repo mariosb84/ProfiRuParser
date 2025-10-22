@@ -21,17 +21,23 @@ public class YooKassaClient {
 
     private final RestTemplate restTemplate;
 
-    @Value("${yookassa.shop-id:}")
+    @Value("${yookassa.shop-id}")
     private String shopId;
 
-    @Value("${yookassa.secret-key:}")
+    @Value("${yookassa.secret-key}")
     private String secretKey;
 
-    @Value("${yookassa.test-mode:true}")
+    @Value("${yookassa.test-mode}")
     private boolean testMode;
 
-    private static final String API_URL = "https://api.yookassa.ru/v3/";
-    private static final String TEST_API_URL = "https://api.yookassa.ru/v3/";
+    @Value("${API_URL}")
+    private String API_URL;
+
+    @Value("${TEST_API_URL}")
+    private String TEST_API_URL;
+
+    /*private static final String API_URL = "https://api.yookassa.ru/v3/";
+    private static final String TEST_API_URL = "https://api.yookassa.ru/v3/";*/ /* меняем на @Value*/
 
     public PaymentCreateResponse createPayment(PaymentCreateRequest request) {
         try {

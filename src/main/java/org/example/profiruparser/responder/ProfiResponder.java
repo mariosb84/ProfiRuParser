@@ -3,6 +3,7 @@ package org.example.profiruparser.responder;
 import org.openqa.selenium.*;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
@@ -11,13 +12,19 @@ import java.util.List;
 @Component
 public class ProfiResponder {
 
+    @Value("${orderUrlSecond}")
+    private String orderUrlSecond;
+
     public boolean respondToOrder(WebDriver existingDriver, String orderId, String message) {
         try {
             WebDriverWait wait = new WebDriverWait(existingDriver, Duration.ofSeconds(20));
 
             /* Переходим на страницу заказа*/
+
             /* ИСПРАВЛЕННЫЙ URL - используем n.php?o= вместо order*/
-            String orderUrl = "https://profi.ru/backoffice/n.php?o=" + orderId;
+
+            /*String orderUrl = "https://profi.ru/backoffice/n.php?o=" + orderId;*/ /* меняем на @Value*/
+            String orderUrl = this.orderUrlSecond + orderId;
             existingDriver.get(orderUrl);
 
             /* Ждем загрузки страницы*/

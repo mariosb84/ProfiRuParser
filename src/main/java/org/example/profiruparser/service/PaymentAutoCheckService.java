@@ -4,6 +4,7 @@ import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.profiruparser.domain.model.User;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -13,6 +14,9 @@ import java.util.concurrent.*;
 @Service
 @RequiredArgsConstructor
 public class PaymentAutoCheckService implements PaymentAutoCheckManager {
+
+    @Value("${subscriptionPlanYearly}")
+    private String subscriptionPlanYearly;
 
     private final YooKassaClient yooKassaClient; // ← ВМЕСТО PaymentService
     private final SubscriptionService subscriptionService;
@@ -77,7 +81,8 @@ public class PaymentAutoCheckService implements PaymentAutoCheckManager {
             var paymentInfo = yooKassaClient.getPayment(paymentId);
             String amount = paymentInfo.getAmount().getValue();
 
-            PaymentService.SubscriptionPlan plan = "2490.00".equals(amount)
+            /*PaymentService.SubscriptionPlan plan = "2490.00".equals(amount)*/ /* меняем на @Value*/
+            PaymentService.SubscriptionPlan plan = this.subscriptionPlanYearly.equals(amount)
                     ? PaymentService.SubscriptionPlan.YEARLY
                     : PaymentService.SubscriptionPlan.MONTHLY;
 

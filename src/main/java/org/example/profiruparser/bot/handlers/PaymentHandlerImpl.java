@@ -8,6 +8,7 @@ import org.example.profiruparser.domain.model.User;
 import org.example.profiruparser.service.PaymentService;
 import org.example.profiruparser.service.SubscriptionService;
 import org.example.profiruparser.service.UserServiceData;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
@@ -19,6 +20,24 @@ import java.util.concurrent.Executors;
 @Service
 @RequiredArgsConstructor
 public class PaymentHandlerImpl implements PaymentHandler {
+
+    @Value("${paymentUrl}")
+    private String paymentUrl;
+
+    @Value("${app.subscription.monthly.price}")
+    private String monthlyPrice;
+
+    @Value("${app.subscription.yearly.price}")
+    private String yearlyPrice;
+
+    @Value("${amountMonthly}")
+    private String amountMonthly;
+
+    @Value("${amountYearly}")
+    private String amountYearly;
+
+    @Value("${currency}")
+    private String currency;
 
     private final PaymentService paymentService;
     private final SubscriptionService subscriptionService;
@@ -48,10 +67,12 @@ public class PaymentHandlerImpl implements PaymentHandler {
                 if (paymentResponse != null && paymentResponse.getId() != null) {
                     savePaymentId(chatId, paymentResponse.getId());
 
-                    String paymentUrl = "https://yoomoney.ru/checkout/payments/v2/contract?orderId=" + paymentResponse.getId();
+                    /*String paymentUrl = "https://yoomoney.ru/checkout/payments/v2/contract?orderId=" + paymentResponse.getId();*/ /*меняем на @Value*/
+                    String paymentUrl = this.paymentUrl + paymentResponse.getId();
 
                     String messageText = "💳 *Оплата подписки*\n\n" +
-                            "✅ Сумма: " + (subscriptionPlan == PaymentService.SubscriptionPlan.MONTHLY ? "299" : "2490") + " ₽\n" +
+                            /*"✅ Сумма: " + (subscriptionPlan == PaymentService.SubscriptionPlan.MONTHLY ? "299" : "2490") + " ₽\n" +*/ /* меняем на @Value*/
+                            "✅ Сумма: " + (subscriptionPlan == PaymentService.SubscriptionPlan.MONTHLY ? this.monthlyPrice : this.yearlyPrice) + this.currency + " \n" +
                             "📝 Описание: " + subscriptionPlan.getDescription() + "\n\n" +
                             "🔗 Ссылка для оплаты:\n" +
                             paymentUrl + "\n\n" +
@@ -82,7 +103,9 @@ public class PaymentHandlerImpl implements PaymentHandler {
                     User user = userService.findByTelegramChatId(chatId);
                     if (user != null) {
                         String amount = payment.getAmount().getValue();
-                        int days = "2490.00".equals(amount) ? 365 : 30;
+
+                       /* int days = "2490.00".equals(amount) ? 365 : 30;*/ /* меняем на @Value*/
+                        int days = this.amountYearly.equals(amount) ? 365 : 30;
 
                         boolean success = subscriptionService.activateSubscription(user.getUsername(), days);
 
