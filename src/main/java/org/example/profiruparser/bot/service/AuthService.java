@@ -7,7 +7,9 @@ import org.example.profiruparser.domain.dto.SignInRequest;
 import org.example.profiruparser.domain.dto.SignUpRequest;
 import org.example.profiruparser.domain.model.User;
 import org.example.profiruparser.service.AuthenticationService;
+import org.example.profiruparser.service.SubscriptionService;
 import org.example.profiruparser.service.UserServiceData;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -19,11 +21,16 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class AuthService {
 
+    @Value("${app.trial.period-days:7}") /* ← ДОБАВЬ ЭТУ СТРОКУ*/
+    private int trialPeriodDays;
+
     private final AuthenticationService authenticationService;
     private final UserServiceData userService;
     private final UserStateManager stateManager;
     private final TelegramService telegramService;
     private final MenuFactory menuFactory;
+
+    private final SubscriptionService subscriptionService;
 
     public void handleLoginCommand(Long chatId) {
         stateManager.setUserState(chatId, UserStateManager.STATE_WAITING_USERNAME);
@@ -70,6 +77,10 @@ public class AuthService {
         request.setPassword(password);
 
         if (authenticationService.signUp(request).isPresent()) {
+
+            /* АКТИВИРУЕМ ПРОБНЫЙ ПЕРИОД*/
+            subscriptionService.activateTrialSubscription(username);
+
             SignInRequest loginRequest = new SignInRequest();
             loginRequest.setUsername(username);
             loginRequest.setPassword(password);
@@ -80,7 +91,9 @@ public class AuthService {
                 stateManager.setUserState(chatId, UserStateManager.STATE_AUTHORIZED_MAIN);
                 telegramService.sendMessage(chatId, "✅ Регистрация и авторизация успешны!");
 
-                // АСИНХРОННО С ЗАДЕРЖКОЙ
+                telegramService.sendMessage(chatId, "🎉 Вам активирован пробный период на " + trialPeriodDays + " дней!");
+
+                /* АСИНХРОННО С ЗАДЕРЖКОЙ*/
                 CompletableFuture.delayedExecutor(500, TimeUnit.MILLISECONDS)
                         .execute(() -> {
                             telegramService.sendMessage(menuFactory.createMainMenu(chatId));

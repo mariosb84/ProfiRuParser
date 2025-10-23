@@ -80,7 +80,8 @@ public class MessageHandlerImpl implements MessageHandler {
         if (text.equals("🔙 Назад") || text.equals("🏠 Главное меню")) {
             /* ВОЗВРАЩАЕМ В ПРАВИЛЬНОЕ МЕНЮ В ЗАВИСИМОСТИ ОТ АВТОРИЗАЦИИ*/
             if (isUserAuthorized(chatId)) {
-                sendMainMenu(chatId);
+                /*sendMainMenu(chatId);*/
+                sendMainMenu(chatId, false); /* ← ОСТАВИТЬ false*/
                 stateManager.setUserState(chatId, UserStateManager.STATE_AUTHORIZED_MAIN);
             } else {
                 sendWelcomeMenu(chatId);
@@ -201,12 +202,14 @@ public class MessageHandlerImpl implements MessageHandler {
                     searchService.handleManualSearch(chatId, searchQuery);
                     stateManager.removeTempSearchQuery(chatId);
                     stateManager.setUserState(chatId, UserStateManager.STATE_AUTHORIZED_MAIN);
-                    sendMainMenu(chatId);
+                    /*sendMainMenu(chatId);*/
+                    sendMainMenu(chatId, true); /* ← ИЗМЕНИТЬ НА true*/
                 } else if (text.equals("❌ Отмена")) {
                     telegramService.sendMessage(chatId, "❌ Поиск отменен");
                     stateManager.removeTempSearchQuery(chatId);
                     stateManager.setUserState(chatId, UserStateManager.STATE_AUTHORIZED_MAIN);
-                    sendMainMenu(chatId);
+                    /*sendMainMenu(chatId);*/
+                    sendMainMenu(chatId, false); /* ← ОСТАВИТЬ false*/
                 }
                 return true;
 
@@ -330,9 +333,11 @@ public class MessageHandlerImpl implements MessageHandler {
             List<String> clearedKeywords = keywordService.getKeywordsForDisplay(chatId);
             telegramService.sendMessage(menuFactory.createKeywordsMenu(chatId, clearedKeywords));
         } else if ("🔙 Назад".equals(text)) {
-            sendMainMenu(chatId);
+            /*sendMainMenu(chatId);*/
+            sendMainMenu(chatId, false); /* ← ОСТАВИТЬ false*/
         } else if ("🏠 Главное меню".equals(text)) {
-            sendMainMenu(chatId);
+            /*sendMainMenu(chatId);*/
+            sendMainMenu(chatId, false); /* ← ОСТАВИТЬ false*/
         } else if ("📋 Информация".equals(text)) {                    /* ← ДОБАВЛЯЕМ*/
             sendInfoMenu(chatId);
         } else if ("📞 Контакты".equals(text)) {                     /* ← ДОБАВЛЯЕМ*/
@@ -348,7 +353,7 @@ public class MessageHandlerImpl implements MessageHandler {
             autoSearchService.handleIntervalButton(chatId, text);
         } else if ("✅ Начать поиск".equals(text) || "❌ Отмена".equals(text)) {
             /* Эти кнопки обрабатываются выше в состоянии подтверждения*/
-            // ничего не делаем, т.к. обрабатывается в другом месте
+            /* ничего не делаем, т.к. обрабатывается в другом месте*/
         } else if ("❌ Выйти".equals(text)) {
             authService.handleLogout(chatId);
         } else if (text.startsWith("✏️ Ключ ")) {
@@ -434,6 +439,11 @@ public class MessageHandlerImpl implements MessageHandler {
         telegramService.sendMessage(menuFactory.createMainMenu(chatId));
     }
 
+    /* ДОБАВЛЯЕМ ТОЛЬКО ЭТОТ ПЕРЕГРУЖЕННЫЙ МЕТОД:*/
+    private void sendMainMenu(Long chatId, boolean afterSearch) {
+        telegramService.sendMessage(menuFactory.createMainMenu(chatId, afterSearch));
+    }
+
     private void sendSubscriptionMenu(Long chatId) {
         telegramService.sendMessage(menuFactory.createSubscriptionMenu(chatId));
     }
@@ -461,5 +471,6 @@ public class MessageHandlerImpl implements MessageHandler {
     }
 
 }
+
 
 

@@ -72,14 +72,30 @@ public class MenuFactoryImpl implements MenuFactory {
 
     @Override
     public SendMessage createMainMenu(Long chatId) {
+        return createMainMenu(chatId, false); /* вызов перегруженного метода с флагом false*/
+    }
+
+    /* НОВЫЙ ПЕРЕГРУЖЕННЫЙ МЕТОД*/
+    public SendMessage createMainMenu(Long chatId, boolean afterSearch) {
         User user = userService.findByTelegramChatId(chatId);
-        String status = user != null ? getSubscriptionStatus(user.getUsername()) : "❌ Подписка: не активна";
+        String status = "";
 
         SendMessage message = new SendMessage();
         message.setChatId(chatId.toString());
-        message.setText("🏠 *Главное меню*\n\n" + status + "\n\nВыберите действие:");
-        message.setParseMode("Markdown");
 
+        /* Показываем надпись о выходе в главное меню только если НЕ после поиска*/
+        if (!afterSearch) {
+            status = user != null ? getSubscriptionStatus(user.getUsername()) : "❌ Подписка: не активна";
+            message.setText("🏠 *Главное меню*\n\n" + status + "\n\nВыберите действие:");
+            message.setParseMode("Markdown");
+        } else {
+            /* После поиска - показываем сообщение о поиске*/
+            /*message.setText("*Время ожидания зависит от загрузки сервера...*");*/
+            message.setText("*⌛*");
+            message.setParseMode("Markdown");
+        }
+
+        /* Остальная логика создания клавиатуры БЕЗ ИЗМЕНЕНИЙ*/
         ReplyKeyboardMarkup keyboard = new ReplyKeyboardMarkup();
         keyboard.setResizeKeyboard(true);
 
@@ -95,14 +111,14 @@ public class MenuFactoryImpl implements MenuFactory {
 
         KeyboardRow row3 = new KeyboardRow();
         row3.add(new KeyboardButton("⏰ Автопоиск"));
-        row3.add(new KeyboardButton("📋 Информация"));    /* ← ДОБАВЛЯЕМ*/
+        row3.add(new KeyboardButton("📋 Информация"));
 
         KeyboardRow row4 = new KeyboardRow();
-        row4.add(new KeyboardButton("📞 Контакты"));      /* ← ДОБАВЛЯЕМ*/
+        row4.add(new KeyboardButton("📞 Контакты"));
         row4.add(new KeyboardButton("🏠 Главное меню"));
 
         KeyboardRow row5 = new KeyboardRow();
-        row4.add(new KeyboardButton("❌ Выйти"));
+        row5.add(new KeyboardButton("❌ Выйти"));
 
         rows.add(row1);
         rows.add(row2);
@@ -202,7 +218,7 @@ public class MenuFactoryImpl implements MenuFactory {
         return message;
     }
 
-    private String getSubscriptionStatus(String username) {
+    /*private String getSubscriptionStatus(String username) {
         if (username == null) return "❌ Подписка: не активна";
 
         LocalDateTime endDate = subscriptionService.getSubscriptionEndDate(username);
@@ -215,6 +231,11 @@ public class MenuFactoryImpl implements MenuFactory {
             return "❌ Подписка истекла: " +
                     endDate.format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"));
         }
+    }
+*/
+
+    private String getSubscriptionStatus(String username) {
+        return subscriptionService.getSubscriptionStatus(username); /* ← ВОТ ТАК*/
     }
 
     @Override

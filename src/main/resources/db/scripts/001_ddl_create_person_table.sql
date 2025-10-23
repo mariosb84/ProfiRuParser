@@ -5,5 +5,6 @@ create table person (
     person_email TEXT,
     person_phone TEXT,
     subscription_end_date TIMESTAMP,
-    telegram_chat_id BIGINT unique
+    telegram_chat_id BIGINT unique,
+    trial_used BOOLEAN DEFAULT FALSE
 );

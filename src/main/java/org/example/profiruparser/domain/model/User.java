@@ -81,6 +81,9 @@ public class User implements UserDetails {
     @Column(name = "telegram_chat_id", unique = true)
     private Long telegramChatId;
 
+    @Column(name = "trial_used")
+    private Boolean trialUsed;
+
     @Override
     public String getUsername() {
         return username;

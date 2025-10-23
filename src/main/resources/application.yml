@@ -1,68 +1,71 @@
 # Basic Application Settings
 spring:
   application:
-    name: profiRuParser
+    name: "profiRuParser"
   server:
     port: 9900
   datasource:
-    url: jdbc:postgresql://localhost:5432/profi_bot_auth
-    username: postgres
-    password: SB14041984sb
-    driver-class-name: org.postgresql.Driver
+    url: "jdbc:postgresql://localhost:5432/profi_bot_auth"
+    username: "postgres"
+    password: "SB14041984sb"
+    driver-class-name: "org.postgresql.Driver"
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: "update"
     show-sql: true
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
+        dialect: "org.hibernate.dialect.PostgreSQLDialect"
   liquibase:
     enabled: false
 
 # Telegram Bot
 tg:
-  username: profibotparser_bot
-  token: 7641090817:AAHssxSX2G6mUE70LgvMHiI-XA-IddrArRE
+  username: "profibotparser_bot"
+  token: "7641090817:AAHssxSX2G6mUE70LgvMHiI-XA-IddrArRE"
 
 # WebDriver
 webdrivermanager:
   cache:
-    path: ./drivers
-  download-proxy: DIRECT
+    path: "./drivers"
+  download-proxy: "DIRECT"
 
 # Logging
 logging:
   level:
-    root: warn
+    root: "warn"
     org:
       springframework:
-        web: error
-        security: DEBUG
+        web: "error"
+        security: "DEBUG"
 
 # YooKassa Payment System
 yookassa:
-  shop-id: 1181320
-  secret-key: test_7AfQYlI0WOQVImchsPcaNkIfQdreb47ttSLDTnSqchA
+  shop-id: "1181320"
+  secret-key: "test_7AfQYlI0WOQVImchsPcaNkIfQdreb47ttSLDTnSqchA"
   test-mode: true
 
+# Application Settings
 app:
   payment:
-    return-url: https://t.me/profibotparser_bot
+    return-url: "https://t.me/profibotparser_bot"
   webhook:
-    url: http://localhost:9900/api/payments/webhook/yookassa
+    url: "http://localhost:9900/api/payments/webhook/yookassa"
   subscription:
     monthly:
       price: "299"
     yearly:
       price: "2490"
+  trial:
+    period-days: "1"
 
 # URLs
-paymentUrl: https://yoomoney.ru/checkout/payments/v2/contract?orderId=
-orderUrl: https://profi.ru/backoffice/n.php?o=
-orderUrlSecond: https://profi.ru/backoffice/n.php?o=
-webDriverManagerGetDriver: https://profi.ru/backoffice/a.php
-webDriverManagerGetDriverSecond: https://profi.ru/backoffice/n.php
-searchUrl: https://profi.ru/backoffice/n.php?q=
+paymentUrl: "https://yoomoney.ru/checkout/payments/v2/contract?orderId="
+orderUrl: "https://profi.ru/backoffice/n.php?o="
+orderUrlSecond: "https://profi.ru/backoffice/n.php?o="
+webDriverManagerGetDriver: "https://profi.ru/backoffice/a.php"
+webDriverManagerGetDriverSecond: "https://profi.ru/backoffice/n.php"
+searchUrl: "https://profi.ru/backoffice/n.php?q="
 
 # Prices and Currency
 subscriptionPlanYearly: "2490.00"
@@ -70,12 +73,12 @@ subscriptionPlanMonthly: "299.00"
 amountMonthly: "299.00"
 amountYearly: "2490.00"
 amountSetCurrency: "RUB"
-currency: " ₽"  # Теперь поддерживается в YAML!
+currency: " ₽"
 currencySecond: "₽"
 
 # API URLs
-API_URL: https://api.yookassa.ru/v3/
-TEST_API_URL: https://api.yookassa.ru/v3/
+API_URL: "https://api.yookassa.ru/v3/"
+TEST_API_URL: "https://api.yookassa.ru/v3/"
 
 # RestTemplate
 rest:

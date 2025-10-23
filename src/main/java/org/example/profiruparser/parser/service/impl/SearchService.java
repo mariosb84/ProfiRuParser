@@ -40,7 +40,7 @@ public class SearchService {
     private List<ProfiOrder> searchOrdersMain(String keyword, OrderExtractionService extractionService) throws Exception {
         System.out.println("=== STARTING UI SEARCH FOR: '" + keyword + "' ===");
 
-        /*webDriverManager.getDriver().get("https://profi.ru/backoffice/n.php");*/ /* меняем на @Value*/
+        /*webDriverManager.getDriver().get("https://profi.ru/backoffice/n.php");*/   /* меняем на @Value*/
         webDriverManager.getDriver().get(this.webDriverManagerGetDriverSecond);
         Thread.sleep(3000);
 
@@ -63,8 +63,25 @@ public class SearchService {
         }
 
         if (!searchPerformed) {
+            /* УСИЛЕННАЯ ОЧИСТКА ПОЛЯ*/
             searchInput.clear();
             Thread.sleep(500);
+
+            /* Дополнительная очистка через Ctrl+A + Delete*/
+            searchInput.sendKeys(Keys.CONTROL + "a");
+            Thread.sleep(200);
+            searchInput.sendKeys(Keys.DELETE);
+            Thread.sleep(500);
+
+            /* Проверка что поле пустое*/
+            String currentText = searchInput.getAttribute("value");
+            if (!currentText.isEmpty()) {
+                System.out.println("WARNING: Field not empty after clear: '" + currentText + "'");
+                /* Повторная очистка*/
+                searchInput.clear();
+                Thread.sleep(500);
+            }
+
             searchInput.sendKeys(keyword);
             Thread.sleep(1000);
             searchInput.sendKeys(Keys.ENTER);
@@ -158,3 +175,4 @@ public class SearchService {
     }
 
 }
+
