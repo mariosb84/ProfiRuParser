@@ -13,8 +13,8 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMar
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+/*import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;*/
 import java.util.ArrayList;
 import java.util.List;
 
@@ -43,6 +43,8 @@ public class MenuFactoryImpl implements MenuFactory {
                 + TextConstants.START_TEXT.getText()
                 + "\n\nВыберите действие:"
         );
+
+        message.setParseMode("Markdown");
 
         ReplyKeyboardMarkup keyboard = new ReplyKeyboardMarkup();
         keyboard.setResizeKeyboard(true);
@@ -267,7 +269,8 @@ public class MenuFactoryImpl implements MenuFactory {
         message.setChatId(chatId.toString());
         message.setText("📞 *Контакты*\n\n" +
                 TextConstants.CONTACTS_TEXT.getText());
-        /*message.setParseMode("Markdown");*/
+
+        message.setParseMode("Markdown");
 
         ReplyKeyboardMarkup keyboard = new ReplyKeyboardMarkup();
         keyboard.setResizeKeyboard(true);

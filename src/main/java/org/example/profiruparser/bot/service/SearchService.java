@@ -101,6 +101,15 @@ public class SearchService {
         executor.submit(() -> {
             try {
                 telegramService.sendMessage(chatId, "🚀 Идет поиск по " + activeKeywords.size() + " ключам...");
+
+                /* ПЕСОЧНЫЕ ЧАСЫ С MARKDOWN*/
+                SendMessage hourglassMessage = SendMessage.builder()
+                        .chatId(chatId.toString())
+                        .text("*⌛*")
+                        .parseMode("Markdown")
+                        .build();
+                telegramService.sendMessage(hourglassMessage);
+
                 parser.ensureLoggedIn(user.getUsername(), user.getPassword());
                 LinkedHashSet<ProfiOrder> allOrders = new LinkedHashSet<>();
 

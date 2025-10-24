@@ -57,7 +57,7 @@ app:
     yearly:
       price: "2490"
   trial:
-    period-days: "1"
+    period-days: "7"
 
 # URLs
 paymentUrl: "https://yoomoney.ru/checkout/payments/v2/contract?orderId="

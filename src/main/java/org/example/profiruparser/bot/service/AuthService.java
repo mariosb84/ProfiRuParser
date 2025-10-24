@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class AuthService {
 
-    @Value("${app.trial.period-days:7}") /* ← ДОБАВЬ ЭТУ СТРОКУ*/
+    @Value("${app.trial.period-days}") /* ← ДОБАВЬ ЭТУ СТРОКУ*/
     private int trialPeriodDays;
 
     private final AuthenticationService authenticationService;
