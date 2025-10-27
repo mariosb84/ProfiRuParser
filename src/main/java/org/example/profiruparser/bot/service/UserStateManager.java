@@ -34,6 +34,9 @@ public class UserStateManager {
     public static final String STATE_SEARCH_IN_PROGRESS = "SEARCH_IN_PROGRESS";
     public static final String STATE_WAITING_SEARCH_CONFIRMATION = "WAITING_SEARCH_CONFIRMATION";
     public static final String STATE_WAITING_SEARCH_QUERY = "WAITING_SEARCH_QUERY";
+    /* Добавляем в константы состояний:*/
+    public static final String STATE_CHANGE_CREDENTIALS_USERNAME = "CHANGE_CREDENTIALS_USERNAME";
+    public static final String STATE_CHANGE_CREDENTIALS_PASSWORD = "CHANGE_CREDENTIALS_PASSWORD";
 
     public String getUserState(Long chatId) {
         return userStates.getOrDefault(chatId, STATE_NONE);

@@ -6,6 +6,7 @@ import org.example.profiruparser.bot.keyboards.MenuFactory;
 import org.example.profiruparser.domain.dto.SignInRequest;
 import org.example.profiruparser.domain.dto.SignUpRequest;
 import org.example.profiruparser.domain.model.User;
+import org.example.profiruparser.errors.InvalidCredentialsException;
 import org.example.profiruparser.service.AuthenticationService;
 import org.example.profiruparser.service.SubscriptionService;
 import org.example.profiruparser.service.UserServiceData;
@@ -38,6 +39,18 @@ public class AuthService {
     }
 
     public void handleRegisterCommand(Long chatId) {
+
+        /* ПРОВЕРЯЕМ - ЕСТЬ ЛИ УЖЕ ПОЛЬЗОВАТЕЛЬ С ЭТИМ CHAT_ID*/
+        User existingUser = userService.findByTelegramChatId(chatId);
+        if (existingUser != null) {
+            telegramService.sendMessage(chatId,
+                    "❌ Вы уже зарегистрированы!\n\n" +
+                            "📧 Ваш логин: " + existingUser.getUsername() + "\n" +
+                            "🆔 Ваш ID: " + existingUser.getId() + "\n\n" +
+                            "Используйте /login для входа в существующий аккаунт.");
+            return;
+        }
+
         stateManager.setUserState(chatId, UserStateManager.STATE_REGISTER_USERNAME);
         telegramService.sendMessage(chatId, "Введите желаемый логин:");
     }
@@ -113,14 +126,22 @@ public class AuthService {
         request.setUsername(username);
         request.setPassword(password);
 
-        Optional<User> user = authenticationService.signIn(request);
-        if (user.isPresent()) {
-            userService.updateTelegramChatId(username, chatId);
-            stateManager.setUserState(chatId, UserStateManager.STATE_AUTHORIZED_MAIN);
-            telegramService.sendMessage(chatId, "✅ Авторизация успешна!");
-            telegramService.sendMessage(menuFactory.createMainMenu(chatId));
-        } else {
+        try {
+            Optional<User> user = authenticationService.signIn(request);
+            if (user.isPresent()) {
+                userService.updateTelegramChatId(username, chatId);
+                stateManager.setUserState(chatId, UserStateManager.STATE_AUTHORIZED_MAIN);
+                telegramService.sendMessage(chatId, "✅ Авторизация успешна!");
+                telegramService.sendMessage(menuFactory.createMainMenu(chatId));
+            }
+        } catch (InvalidCredentialsException e) {
+            /* Ловим исключение "неверные креды"*/
             telegramService.sendMessage(chatId, "❌ Неверный логин или пароль. /login");
+            stateManager.removeUserState(chatId);
+        } catch (Exception e) {
+            /* Все остальные ошибки*/
+            log.error("Login error for user: {}", username, e);
+            telegramService.sendMessage(chatId, "❌ Произошла ошибка. Попробуйте еще раз.");
             stateManager.removeUserState(chatId);
         }
     }

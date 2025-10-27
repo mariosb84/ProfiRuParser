@@ -122,11 +122,17 @@ public class MenuFactoryImpl implements MenuFactory {
         KeyboardRow row5 = new KeyboardRow();
         row5.add(new KeyboardButton("❌ Выйти"));
 
+        /* В списке rows после row5 добавляем:*/
+        KeyboardRow row6 = new KeyboardRow();
+        row6.add(new KeyboardButton("⚙️ Сменить данные Profi.ru"));
+
         rows.add(row1);
         rows.add(row2);
         rows.add(row3);
         rows.add(row4);
         rows.add(row5);
+        /* И добавляем в rows:*/
+        rows.add(row6);
         keyboard.setKeyboard(rows);
         message.setReplyMarkup(keyboard);
 
