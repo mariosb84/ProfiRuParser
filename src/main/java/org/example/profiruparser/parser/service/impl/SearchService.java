@@ -21,6 +21,18 @@ public class SearchService {
     @Value("${searchUrl}")
     private String searchUrl;
 
+    @Value("${app.profi.selectors.search-input}")
+    private String searchInput;
+
+    @Value("${app.profi.selectors.search-history}")
+    private String searchHistory;
+
+    @Value("${app.profi.selectors.loading-indicator}")
+    private String loadingIndicator;
+
+    @Value("${app.profi.selectors.search-button-selectors}")
+    private String searchButtonSelectors;
+
     private final WebDriverManager webDriverManager;
 
     @Autowired
@@ -49,7 +61,8 @@ public class SearchService {
         Thread.sleep(2000);
 
         WebElement searchInput = webDriverManager.getDriver().findElement(By.cssSelector(
-                "input[data-testid='fulltext_edit_mode_test_id'], #searchField-1, .SearchFieldStyles__SearchInput-sc-10dn6mx-6"
+                /*"input[data-testid='fulltext_edit_mode_test_id'], #searchField-1, .SearchFieldStyles__SearchInput-sc-10dn6mx-6"*/ /* меняем на @Value*/
+                this.searchInput
         ));
 
         boolean searchPerformed = false;
@@ -112,7 +125,8 @@ public class SearchService {
 
     private WebElement findSearchHistoryItem(String keyword) {
         List<WebElement> historyItems = webDriverManager.getDriver().findElements(By.cssSelector(
-                "[data-testid='suggest_view'] .CellStyles__Text-sc-4tqx95-4"
+                /*"[data-testid='suggest_view'] .CellStyles__Text-sc-4tqx95-4"*/     /* меняем на @Value*/
+                this.searchHistory
         ));
 
         for (WebElement item : historyItems) {
@@ -128,7 +142,8 @@ public class SearchService {
         for (int i = 0; i < 10; i++) {
             try {
                 boolean isLoading = !webDriverManager.getDriver().findElements(
-                        By.cssSelector("[class*='loading'], [class*='spinner']")).isEmpty();
+                        /*By.cssSelector("[class*='loading'], [class*='spinner']")).isEmpty();*/      /* меняем на @Value*/
+                        By.cssSelector(this.loadingIndicator)).isEmpty();
                 if (!isLoading) {
                     return;
                 }
@@ -141,11 +156,13 @@ public class SearchService {
 
     private WebElement findSearchButton() {
         String[] selectors = {
-                "button[data-testid='fulltext_view_mode_test_id']",
+                                                                                  /* меняем на @Value*/
+                /*"button[data-testid='fulltext_view_mode_test_id']",
                 ".SearchFieldStyles__ViewStateBlock-sc-10dn6mx-4",
                 "[class*='search'] button",
                 "button[aria-label*='поиск']",
-                "button[aria-label*='заказ']"
+                "button[aria-label*='заказ']"*/
+                this.searchButtonSelectors
         };
 
         for (String selector : selectors) {

@@ -15,6 +15,24 @@ public class ProfiResponder {
     @Value("${orderUrlSecond}")
     private String orderUrlSecond;
 
+    @Value("${app.profi.selectors.response-textarea}")
+    private String responseTextarea;
+
+    @Value("${app.profi.selectors.success-indicators}")
+    private String successIndicators;
+
+    @Value("${app.profi.selectors.success-texts}")
+    private String successTexts;
+
+    @Value("${app.profi.selectors.order-page-indicator}")
+    private String orderPageIndicator;
+
+    @Value("${app.profi.selectors.response-button-1}")
+    private String responseButtonOne;
+
+    @Value("${app.profi.selectors.response-button-2}")
+    private String responseButtonTwo;
+
     public boolean respondToOrder(WebDriver existingDriver, String orderId, String message) {
         try {
             WebDriverWait wait = new WebDriverWait(existingDriver, Duration.ofSeconds(20));
@@ -52,9 +70,11 @@ public class ProfiResponder {
 
             /* Ждем появления формы отклика с разными селекторами*/
             WebElement textarea = wait.until(ExpectedConditions.visibilityOfElementLocated(
-                    By.cssSelector("textarea, [role='textbox'], [data-testid='response-text'], " +
+                                                                                                              /* меняем на @Value*/
+                    /*By.cssSelector("textarea, [role='textbox'], [data-testid='response-text'], " +
                             "[class*='textarea'], [class*='text-area'], " +
-                            "form textarea, .response-form textarea")
+                            "form textarea, .response-form textarea")*/
+                    By.cssSelector(this.responseTextarea)
             ));
 
             textarea.clear();
@@ -69,15 +89,21 @@ public class ProfiResponder {
             /* Проверяем успех с разными вариантами*/
             try {
                 wait.until(ExpectedConditions.or(
-                        ExpectedConditions.visibilityOfElementLocated(By.cssSelector(".success-message, [class*='success'], [class*='Success']")),
-                        ExpectedConditions.textToBePresentInElementLocated(By.cssSelector("body"), "отклик отправлен"),
-                        ExpectedConditions.textToBePresentInElementLocated(By.cssSelector("body"), "отклик успешно"),
-                        ExpectedConditions.invisibilityOfElementLocated(By.cssSelector("textarea, [role='textbox']")),
-                        ExpectedConditions.presenceOfElementLocated(By.cssSelector(".order-card, [class*='order']")) // Возврат на страницу заказа
+                        /*ExpectedConditions.visibilityOfElementLocated(By.cssSelector(".success-message, [class*='success'], [class*='Success']")),*/ /* меняем на @Value*/
+                        ExpectedConditions.visibilityOfElementLocated(By.cssSelector(this.successIndicators)),
+                        /*ExpectedConditions.textToBePresentInElementLocated(By.cssSelector("body"), "отклик отправлен"),*/   /* меняем на @Value*/
+                       /* ExpectedConditions.textToBePresentInElementLocated(By.cssSelector("body"), "отклик успешно"),*/     /* меняем на @Value*/
+                        ExpectedConditions.textToBePresentInElementLocated(By.cssSelector("body"), this.successTexts),
+                        ExpectedConditions.textToBePresentInElementLocated(By.cssSelector("body"), this.successTexts),
+                        /*ExpectedConditions.invisibilityOfElementLocated(By.cssSelector("textarea, [role='textbox']")),*/   /* меняем на @Value*/
+                        ExpectedConditions.invisibilityOfElementLocated(By.cssSelector(this.responseTextarea)),
+                        /*ExpectedConditions.presenceOfElementLocated(By.cssSelector(".order-card, [class*='order']"))*/ /* Возврат на страницу заказа*/   /* меняем на @Value*/
+                        ExpectedConditions.presenceOfElementLocated(By.cssSelector(this.orderPageIndicator))
                 ));
             } catch (TimeoutException e) {
                 /* Если не дождались явного успеха, но форма исчезла - считаем успехом*/
-                if (existingDriver.findElements(By.cssSelector("textarea, [role='textbox']")).isEmpty()) {
+               /* if (existingDriver.findElements(By.cssSelector("textarea, [role='textbox']")).isEmpty()) {*/     /* меняем на @Value*/
+                if (existingDriver.findElements(By.cssSelector(this.responseTextarea)).isEmpty()) {
                     return true;
                 }
                 throw e;
@@ -105,8 +131,10 @@ public class ProfiResponder {
                 By.xpath("//a[.//*[contains(text(), 'Откликнуться')]]"),
 
                 /* Селекторы по классам*/
-                By.cssSelector("a.backoffice-common-button.order-card-bid-action-bar__button"),
-                By.cssSelector("[class*='order-card-bid-action-bar'] a[class*='backoffice-common-button']"),
+                /*By.cssSelector("a.backoffice-common-button.order-card-bid-action-bar__button"),*/  /* меняем на @Value*/
+                By.cssSelector(this.responseButtonOne),
+                /*By.cssSelector("[class*='order-card-bid-action-bar'] a[class*='backoffice-common-button']"),*/    /* меняем на @Value*/
+                By.cssSelector(this.responseButtonTwo),
 
                 /* Универсальные селекторы*/
                 By.xpath("//a[contains(@class, 'backoffice-common-button')]"),

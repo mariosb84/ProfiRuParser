@@ -37,7 +37,7 @@ public class SearchService {
     private final SubscriptionService subscriptionService;
     private final TelegramService telegramService;
     private final UserStateManager stateManager;
-    private final SeenOrderService seenOrderService; // ДОБАВЛЯЕМ
+    private final SeenOrderService seenOrderService; /* ДОБАВЛЯЕМ*/
 
     private final ExecutorService executor = Executors.newFixedThreadPool(4);
 

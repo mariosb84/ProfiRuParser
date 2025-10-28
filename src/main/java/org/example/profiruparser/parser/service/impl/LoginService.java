@@ -18,6 +18,21 @@ public class LoginService {
     @Value("${webDriverManagerGetDriver}")
     private String webDriverManagerGetDriver;
 
+    @Value("${app.profi.selectors.login-input}")
+    private String loginInput;
+
+    @Value("${app.profi.selectors.password-input}")
+    private String passwordInput;
+
+    @Value("${app.profi.selectors.submit-button}")
+    private String submitButton;
+
+    @Value("${app.profi.selectors.auth-success}")
+    private String authSuccess;
+
+    @Value("${app.profi.selectors.auth-failure}")
+    private String authFailure;
+
     private final WebDriverManager webDriverManager;
     @Getter
     private boolean loggedIn = false;
@@ -51,7 +66,8 @@ public class LoginService {
         try {
             WebElement loginInput = webDriverManager.getWait().until(
                     ExpectedConditions.visibilityOfElementLocated(
-                            By.cssSelector("input.login-form__input-login")));
+                            /*By.cssSelector("input.login-form__input-login")));*/ /*меняем на @Value*/
+                            By.cssSelector(this.loginInput)));
 
             System.out.println("Login form loaded");
             loginInput.clear();
@@ -60,7 +76,8 @@ public class LoginService {
 
             WebElement passwordInput = webDriverManager.getWait().until(
                     ExpectedConditions.visibilityOfElementLocated(
-                            By.cssSelector("input.login-form__input-password")));
+                            /*By.cssSelector("input.login-form__input-password")));*/ /*меняем на @Value*/
+                            By.cssSelector(this.passwordInput)));
 
             passwordInput.clear();
             Thread.sleep(1000);
@@ -68,15 +85,18 @@ public class LoginService {
 
             WebElement submitButton = webDriverManager.getWait().until(
                     ExpectedConditions.elementToBeClickable(
-                            By.cssSelector("a.ButtonsContainer__SubmitButton-sc-1bmmrie-5, button[type='submit']")));
+                           /* By.cssSelector("a.ButtonsContainer__SubmitButton-sc-1bmmrie-5, button[type='submit']")));*/ /*меняем на @Value*/
+                            By.cssSelector(this.submitButton)));
 
             submitButton.click();
 
             boolean loginSuccess = webDriverManager.getWait().until(d -> {
                 String currentUrl = d.getCurrentUrl();
                 return currentUrl.contains("n.php") ||
-                        !d.findElements(By.cssSelector(".user-avatar, [class*='user'], [data-testid*='user']")).isEmpty() ||
-                        d.findElements(By.cssSelector(".login-form, input.login-form__input-login")).isEmpty();
+                        /*!d.findElements(By.cssSelector(".user-avatar, [class*='user'], [data-testid*='user']")).isEmpty() ||*/ /*меняем на @Value*/
+                        !d.findElements(By.cssSelector(this.authSuccess)).isEmpty() ||
+                        /*d.findElements(By.cssSelector(".login-form, input.login-form__input-login")).isEmpty();*/ /*меняем на @Value*/
+                        d.findElements(By.cssSelector(this.authFailure)).isEmpty();
             });
 
             if (loginSuccess) {

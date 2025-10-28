@@ -78,6 +78,18 @@ public class MessageHandlerImpl implements MessageHandler {
 
         /* ГЛОБАЛЬНЫЕ КНОПКИ МЕНЮ - ВСЕГДА ВОЗВРАЩАЮТ В ПРАВИЛЬНОЕ МЕНЮ*/
         if (text.equals("🔙 Назад") || text.equals("🏠 Главное меню")) {
+
+            /* ЕСЛИ МЫ В ПРОЦЕССЕ СМЕНЫ ДАННЫХ - ОБРАБАТЫВАЕМ КАК ОТМЕНУ*/
+            if (userState.equals(UserStateManager.STATE_CHANGE_CREDENTIALS_USERNAME) ||
+                    userState.equals(UserStateManager.STATE_CHANGE_CREDENTIALS_PASSWORD)) {
+
+                telegramService.sendMessage(chatId, "❌ Смена данных отменена");
+                stateManager.removeTempUsername(chatId);
+                stateManager.setUserState(chatId, UserStateManager.STATE_AUTHORIZED_MAIN);
+                sendMainMenu(chatId, false);
+                return true;
+            }
+
             /* ВОЗВРАЩАЕМ В ПРАВИЛЬНОЕ МЕНЮ В ЗАВИСИМОСТИ ОТ АВТОРИЗАЦИИ*/
             if (isUserAuthorized(chatId)) {
                 /*sendMainMenu(chatId);*/
@@ -96,6 +108,16 @@ public class MessageHandlerImpl implements MessageHandler {
                 telegramService.sendMessage(chatId,
                         /*"❌ Завершите ввод поискового запроса или нажмите '🔙 Назад' для отмены");*/
                           "❌ Завершите ввод поискового запроса или нажмите '🏠 Главное меню' для отмены");
+                return true;
+            }
+        }
+
+        /* БЛОКИРОВКА КНОПОК ПРИ СМЕНЕ ДАННЫХ*/
+        if (userState.equals(UserStateManager.STATE_CHANGE_CREDENTIALS_USERNAME) ||
+                userState.equals(UserStateManager.STATE_CHANGE_CREDENTIALS_PASSWORD)) {
+
+            if (isMenuCommand(text)) {
+                telegramService.sendMessage(chatId, "❌ Завершите ввод данных или нажмите '🏠 Главное меню' для отмены");
                 return true;
             }
         }
@@ -215,6 +237,13 @@ public class MessageHandlerImpl implements MessageHandler {
 
             /* Добавляем в switch (userState) после существующих case:*/
             case UserStateManager.STATE_CHANGE_CREDENTIALS_USERNAME:
+
+                /* ПРОВЕРКА ДЛИНЫ ЛОГИНА*/
+                if (text.length() < 3) {
+                    telegramService.sendMessage(chatId, "❌ Логин должен содержать минимум 3 символа:");
+                    return true;
+                }
+
                 stateManager.setTempUsername(chatId, text);
                 stateManager.setUserState(chatId, UserStateManager.STATE_CHANGE_CREDENTIALS_PASSWORD);
                 telegramService.sendMessage(chatId, "🔑 Введите новый пароль для Profi.ru:");

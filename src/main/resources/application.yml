@@ -58,6 +58,35 @@ app:
       price: "2490"
   trial:
     period-days: "7"
+  profi:
+    selectors:
+      # LoginService
+      login-input: "input.login-form__input-login"
+      password-input: "input.login-form__input-password"
+      submit-button: "a.ButtonsContainer__SubmitButton-sc-1bmmrie-5, button[type='submit']"
+      auth-success: ".user-avatar, [class*='user'], [data-testid*='user']"
+      auth-failure: ".login-form, input.login-form__input-login"
+
+      # OrderExtractionService
+      order-cards: "a[data-testid$='_order-snippet']"
+      title-selectors: "h3.SubjectAndPriceStyles__SubjectsText-sc-18v5hu8-1, h3.SubjectAndPriceStyles__SubjectsText-sc-18v5hu8-1.hEywcV, h3, [class*='title'], [class*='subject']"
+      price-selectors: ".SubjectAndPriceStyles__PriceValue-sc-18v5hu8-5, .SubjectAndPriceStyles__PriceValue-sc-18v5hu8-5.lfrrNh, [class*='price']"
+      description-selectors: ".SnippetBodyStyles__MainInfo-sc-tnih0-6, [class*='description'], [class*='info']"
+      time-selectors: ".Date__DateText-sc-e1f8oi-1, [class*='date'], [class*='time'], .order-date, .snippet-date"
+
+      # SearchService
+      search-input: "input[data-testid='fulltext_edit_mode_test_id'], #searchField-1, .SearchFieldStyles__SearchInput-sc-10dn6mx-6"
+      search-history: "[data-testid='suggest_view'] .CellStyles__Text-sc-4tqx95-4"
+      loading-indicator: "[class*='loading'], [class*='spinner']"
+      search-button-selectors: "button[data-testid='fulltext_view_mode_test_id'], .SearchFieldStyles__ViewStateBlock-sc-10dn6mx-4, [class*='search'] button, button[aria-label*='поиск'], button[aria-label*='заказ']"
+
+      # ProfiResponder
+      response-textarea: "textarea, [role='textbox'], [data-testid='response-text'], [class*='textarea'], [class*='text-area'], form textarea, .response-form textarea"
+      success-indicators: ".success-message, [class*='success'], [class*='Success']"
+      success-texts: "отклик отправлен,отклик успешно"
+      order-page-indicator: ".order-card, [class*='order']"
+      response-button-1: "a.backoffice-common-button.order-card-bid-action-bar__button"
+      response-button-2: "[class*='order-card-bid-action-bar'] a[class*='backoffice-common-button']"
 
 # URLs
 paymentUrl: "https://yoomoney.ru/checkout/payments/v2/contract?orderId="
