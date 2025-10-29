@@ -65,6 +65,56 @@ public class SearchService {
                 this.searchInput
         ));
 
+        // ВСЕГДА ИСПОЛЬЗУЕМ РУЧНОЙ ВВОД (ИСТОРИЯ ОТКЛЮЧЕНА)
+        System.out.println("Using manual input (history disabled)");
+
+        /* УСИЛЕННАЯ ОЧИСТКА ПОЛЯ*/
+        searchInput.clear();
+        Thread.sleep(500);
+
+        /* Дополнительная очистка через Ctrl+A + Delete*/
+        searchInput.sendKeys(Keys.CONTROL + "a");
+        Thread.sleep(200);
+        searchInput.sendKeys(Keys.DELETE);
+        Thread.sleep(500);
+
+        /* Проверка что поле пустое*/
+        String currentText = searchInput.getAttribute("value");
+        if (!currentText.isEmpty()) {
+            System.out.println("WARNING: Field not empty after clear: '" + currentText + "'");
+            /* Повторная очистка*/
+            searchInput.clear();
+            Thread.sleep(500);
+        }
+
+        searchInput.sendKeys(keyword);
+        Thread.sleep(1000);
+        searchInput.sendKeys(Keys.ENTER);
+        System.out.println("✅ Search via manual input + Enter");
+
+        Thread.sleep(5000);
+        waitForSearchResults();
+        scrollPage();
+
+        return extractionService.extractOrders(webDriverManager.getDriver(), keyword);
+    }
+
+   /* private List<ProfiOrder> searchOrdersMain(String keyword, OrderExtractionService extractionService) throws Exception {
+        System.out.println("=== STARTING UI SEARCH FOR: '" + keyword + "' ===");
+
+        *//*webDriverManager.getDriver().get("https://profi.ru/backoffice/n.php");*//*   *//* меняем на @Value*//*
+        webDriverManager.getDriver().get(this.webDriverManagerGetDriverSecond);
+        Thread.sleep(3000);
+
+        WebElement searchButton = findSearchButton();
+        ((JavascriptExecutor) webDriverManager.getDriver()).executeScript("arguments[0].click();", searchButton);
+        Thread.sleep(2000);
+
+        WebElement searchInput = webDriverManager.getDriver().findElement(By.cssSelector(
+                *//*"input[data-testid='fulltext_edit_mode_test_id'], #searchField-1, .SearchFieldStyles__SearchInput-sc-10dn6mx-6"*//* *//* меняем на @Value*//*
+                this.searchInput
+        ));
+
         boolean searchPerformed = false;
         try {
             WebElement historyItem = findSearchHistoryItem(keyword);
@@ -76,21 +126,21 @@ public class SearchService {
         }
 
         if (!searchPerformed) {
-            /* УСИЛЕННАЯ ОЧИСТКА ПОЛЯ*/
+            *//* УСИЛЕННАЯ ОЧИСТКА ПОЛЯ*//*
             searchInput.clear();
             Thread.sleep(500);
 
-            /* Дополнительная очистка через Ctrl+A + Delete*/
+            *//* Дополнительная очистка через Ctrl+A + Delete*//*
             searchInput.sendKeys(Keys.CONTROL + "a");
             Thread.sleep(200);
             searchInput.sendKeys(Keys.DELETE);
             Thread.sleep(500);
 
-            /* Проверка что поле пустое*/
+            *//* Проверка что поле пустое*//*
             String currentText = searchInput.getAttribute("value");
             if (!currentText.isEmpty()) {
                 System.out.println("WARNING: Field not empty after clear: '" + currentText + "'");
-                /* Повторная очистка*/
+                *//* Повторная очистка*//*
                 searchInput.clear();
                 Thread.sleep(500);
             }
@@ -106,7 +156,7 @@ public class SearchService {
         scrollPage();
 
         return extractionService.extractOrders(webDriverManager.getDriver(), keyword);
-    }
+    }*/
 
     private List<ProfiOrder> searchOrdersAlternative(String keyword, OrderExtractionService extractionService) throws Exception {
         System.out.println("=== USING ALTERNATIVE SEARCH ===");

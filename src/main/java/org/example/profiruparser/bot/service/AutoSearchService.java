@@ -81,8 +81,8 @@ public class AutoSearchService {
                 interval = Integer.parseInt(text);
             }
 
-            if (interval < 5) {
-                telegramService.sendMessage(chatId, "❌ Минимальный интервал - 5 минут");
+            if (interval < 15) {
+                telegramService.sendMessage(chatId, "❌ Минимальный интервал - 15 минут");
                 return;
             }
             if (interval > 1440) {
