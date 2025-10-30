@@ -130,7 +130,7 @@ public class MessageHandlerImpl implements MessageHandler {
 
             /* СПИСОК ЗАБЛОКИРОВАННЫХ КНОПОК ВО ВРЕМЯ ВВОДА*/
             if (text.equals("🔑 Войти") ||
-                    text.equals("📝 Регистрация") ||
+                    text.equals("📝 Подключить_Profi_ru") ||
                     text.equals("📋 Информация") ||      /* ← ДОБАВЛЯЕМ*/
                     text.equals("📞 Контакты")) {        /* ← ДОБАВЛЯЕМ*/
 
@@ -246,7 +246,7 @@ public class MessageHandlerImpl implements MessageHandler {
 
                 stateManager.setTempUsername(chatId, text);
                 stateManager.setUserState(chatId, UserStateManager.STATE_CHANGE_CREDENTIALS_PASSWORD);
-                telegramService.sendMessage(chatId, "🔑 Введите новый пароль для Profi.ru:");
+                telegramService.sendMessage(chatId, "🔑 Введите новый пароль для Profi_ru:");
                 return true;
 
             case UserStateManager.STATE_CHANGE_CREDENTIALS_PASSWORD:
@@ -272,7 +272,7 @@ public class MessageHandlerImpl implements MessageHandler {
         user.setPassword(newPassword);
         userService.save(user);
 
-        telegramService.sendMessage(chatId, "✅ Данные Profi.ru успешно обновлены!");
+        telegramService.sendMessage(chatId, "✅ Данные Profi_ru успешно обновлены!");
         sendMainMenu(chatId, false);
     }
 
@@ -284,7 +284,7 @@ public class MessageHandlerImpl implements MessageHandler {
         }
 
         switch (text) {
-            case "/register", "📝 Регистрация":
+            case "/register", "📝 Подключить_Profi_ru":
                 authService.handleRegisterCommand(chatId);
                 break;
             case "/login", "🔑 Войти":
@@ -419,8 +419,8 @@ public class MessageHandlerImpl implements MessageHandler {
         }
 
         /* Добавляем в блок if-else после существующих команд:*/
-        else if ("⚙️ Сменить данные Profi.ru".equals(text)) {
-            telegramService.sendMessage(chatId, "✏️ Введите новый логин для Profi.ru:");
+        else if ("⚙️ Сменить данные Profi_ru".equals(text)) {
+            telegramService.sendMessage(chatId, "✏️ Введите новый логин для Profi_ru:");
             stateManager.setUserState(chatId, UserStateManager.STATE_CHANGE_CREDENTIALS_USERNAME);
         }
 
@@ -458,7 +458,7 @@ public class MessageHandlerImpl implements MessageHandler {
                 text.equals("❌ Отмена") ||
                 text.equals("📋 Информация") ||        /* ← ДОБАВЛЯЕМ*/
                 text.equals("📞 Контакты") ||         /* ← ДОБАВЛЯЕМ*/
-                text.equals("⚙️ Сменить данные Profi.ru") ||  /* ← ДОБАВЬ ЭТУ СТРОКУ*/
+                text.equals("⚙️ Сменить данные Profi_ru") ||  /* ← ДОБАВЬ ЭТУ СТРОКУ*/
                 text.startsWith("✏️ Ключ ");
     }
 
@@ -494,7 +494,7 @@ public class MessageHandlerImpl implements MessageHandler {
                 "12 месяцев - " + this.yearlyPrice + this.currencySecond,
 
                 "✅ Проверить оплату", "🔙 Назад", "🏠 Старт",
-                "📝 Регистрация", "🔑 Войти", "❌ Выйти"
+                "📝 Подключить_Profi_ru", "🔑 Войти", "❌ Выйти"
         ).contains(text);
     }
 

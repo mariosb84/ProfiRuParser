@@ -15,7 +15,11 @@ public class OrderSortingService {
                 long weight2 = getDateWeight(o2.getCreationTime());
 
                 /* Сортируем по УБЫВАНИЮ веса (новые первыми)*/
-                return Long.compare(weight2, weight1);
+               /* return Long.compare(weight2, weight1);*/
+
+                /* ИЗМЕНЕНИЕ: сортируем по ВОЗРАСТАНИЮ веса (старые первыми)*/
+                return Long.compare(weight1, weight2);
+
             } catch (Exception e) {
                 return 0;
             }

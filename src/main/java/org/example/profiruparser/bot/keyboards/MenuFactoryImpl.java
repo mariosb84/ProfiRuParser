@@ -53,7 +53,7 @@ public class MenuFactoryImpl implements MenuFactory {
         List<KeyboardRow> rows = new ArrayList<>();
 
         KeyboardRow row1 = new KeyboardRow();
-        row1.add(new KeyboardButton("📝 Регистрация"));
+        row1.add(new KeyboardButton("📝 Подключить_Profi_ru"));
         row1.add(new KeyboardButton("🔑 Войти"));
 
         KeyboardRow row2 = new KeyboardRow();
@@ -124,7 +124,7 @@ public class MenuFactoryImpl implements MenuFactory {
 
         /* В списке rows после row5 добавляем:*/
         KeyboardRow row6 = new KeyboardRow();
-        row6.add(new KeyboardButton("⚙️ Сменить данные Profi.ru"));
+        row6.add(new KeyboardButton("⚙️ Сменить данные Profi_ru"));
 
         rows.add(row1);
         rows.add(row2);
