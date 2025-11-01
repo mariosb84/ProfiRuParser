@@ -1,5 +1,6 @@
 package org.example.profiruparser.parser.service.impl;
 
+import lombok.extern.slf4j.Slf4j;
 import org.example.profiruparser.domain.dto.ProfiOrder;
 import org.openqa.selenium.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +12,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+@Slf4j /** ДОБАВЛЯЕМ ЛОГГЕР */
 @Service("parserSearchService")
 @Qualifier("parserSearchService")
 public class SearchService {
@@ -44,13 +46,17 @@ public class SearchService {
         try {
             return searchOrdersMain(keyword, extractionService);
         } catch (Exception e) {
-            System.err.println("Main search failed, trying alternative: " + e.getMessage());
+            log.error("Main search failed, trying alternative: {}", e.getMessage());
+
+            /** ПЕРЕЗАПУСКАЕМ БРАУЗЕР ПЕРЕД АЛЬТЕРНАТИВНЫМ ПОИСКОМ */
+            restartBrowser();
+
             return searchOrdersAlternative(keyword, extractionService);
         }
     }
 
     private List<ProfiOrder> searchOrdersMain(String keyword, OrderExtractionService extractionService) throws Exception {
-        System.out.println("=== STARTING UI SEARCH FOR: '" + keyword + "' ===");
+        log.info("=== STARTING UI SEARCH FOR: '{}' ===", keyword);
 
         /*webDriverManager.getDriver().get("https://profi.ru/backoffice/n.php");*/   /* меняем на @Value*/
         webDriverManager.getDriver().get(this.webDriverManagerGetDriverSecond);
@@ -66,7 +72,7 @@ public class SearchService {
         ));
 
         // ВСЕГДА ИСПОЛЬЗУЕМ РУЧНОЙ ВВОД (ИСТОРИЯ ОТКЛЮЧЕНА)
-        System.out.println("Using manual input (history disabled)");
+        log.info("Using manual input (history disabled)");
 
         /* УСИЛЕННАЯ ОЧИСТКА ПОЛЯ*/
         searchInput.clear();
@@ -81,7 +87,7 @@ public class SearchService {
         /* Проверка что поле пустое*/
         String currentText = searchInput.getAttribute("value");
         if (!currentText.isEmpty()) {
-            System.out.println("WARNING: Field not empty after clear: '" + currentText + "'");
+            log.warn("WARNING: Field not empty after clear: '{}'", currentText);
             /* Повторная очистка*/
             searchInput.clear();
             Thread.sleep(500);
@@ -90,7 +96,7 @@ public class SearchService {
         searchInput.sendKeys(keyword);
         Thread.sleep(1000);
         searchInput.sendKeys(Keys.ENTER);
-        System.out.println("✅ Search via manual input + Enter");
+        log.info("✅ Search via manual input + Enter");
 
         Thread.sleep(5000);
         waitForSearchResults();
@@ -99,78 +105,44 @@ public class SearchService {
         return extractionService.extractOrders(webDriverManager.getDriver(), keyword);
     }
 
-   /* private List<ProfiOrder> searchOrdersMain(String keyword, OrderExtractionService extractionService) throws Exception {
-        System.out.println("=== STARTING UI SEARCH FOR: '" + keyword + "' ===");
+    private List<ProfiOrder> searchOrdersAlternative(String keyword, OrderExtractionService extractionService) throws Exception {
+        log.info("=== USING ALTERNATIVE SEARCH ===");
 
-        *//*webDriverManager.getDriver().get("https://profi.ru/backoffice/n.php");*//*   *//* меняем на @Value*//*
-        webDriverManager.getDriver().get(this.webDriverManagerGetDriverSecond);
-        Thread.sleep(3000);
-
-        WebElement searchButton = findSearchButton();
-        ((JavascriptExecutor) webDriverManager.getDriver()).executeScript("arguments[0].click();", searchButton);
-        Thread.sleep(2000);
-
-        WebElement searchInput = webDriverManager.getDriver().findElement(By.cssSelector(
-                *//*"input[data-testid='fulltext_edit_mode_test_id'], #searchField-1, .SearchFieldStyles__SearchInput-sc-10dn6mx-6"*//* *//* меняем на @Value*//*
-                this.searchInput
-        ));
-
-        boolean searchPerformed = false;
         try {
-            WebElement historyItem = findSearchHistoryItem(keyword);
-            historyItem.click();
-            searchPerformed = true;
-            System.out.println("✅ Search via history selection");
-        } catch (Exception e) {
-            System.out.println("History item not found, trying manual input...");
-        }
+            String encodedKeyword = URLEncoder.encode(keyword, StandardCharsets.UTF_8.toString());
 
-        if (!searchPerformed) {
-            *//* УСИЛЕННАЯ ОЧИСТКА ПОЛЯ*//*
-            searchInput.clear();
-            Thread.sleep(500);
+            /*String searchUrl = "https://profi.ru/backoffice/n.php?q=" + encodedKeyword;*/ /* меняем на @Value*/
+            String searchUrl = this.searchUrl + encodedKeyword;
 
-            *//* Дополнительная очистка через Ctrl+A + Delete*//*
-            searchInput.sendKeys(Keys.CONTROL + "a");
-            Thread.sleep(200);
-            searchInput.sendKeys(Keys.DELETE);
-            Thread.sleep(500);
-
-            *//* Проверка что поле пустое*//*
-            String currentText = searchInput.getAttribute("value");
-            if (!currentText.isEmpty()) {
-                System.out.println("WARNING: Field not empty after clear: '" + currentText + "'");
-                *//* Повторная очистка*//*
-                searchInput.clear();
-                Thread.sleep(500);
+            /** УБЕДИТЕСЬ ЧТО БРАУЗЕР ПЕРЕСОЗДАН ПОСЛЕ quitDriver() */
+            if (webDriverManager.getDriver() == null) {
+                webDriverManager.getDriver(); /** пересоздаем драйвер */
             }
 
-            searchInput.sendKeys(keyword);
-            Thread.sleep(1000);
-            searchInput.sendKeys(Keys.ENTER);
-            System.out.println("✅ Search via manual input + Enter");
+            webDriverManager.getDriver().get(searchUrl);
+            Thread.sleep(8000);
+            scrollPage();
+
+            return extractionService.extractOrders(webDriverManager.getDriver(), keyword);
+
+        } catch (Exception e) {
+            log.error("Alternative search also failed: {}", e.getMessage());
+            /** ПРИ ОШИБКЕ В АЛЬТЕРНАТИВНОМ ПОИСКЕ - ПЕРЕЗАПУСКАЕМ БРАУЗЕР */
+            restartBrowser();
+            throw e;
         }
+    }
 
-        Thread.sleep(5000);
-        waitForSearchResults();
-        scrollPage();
-
-        return extractionService.extractOrders(webDriverManager.getDriver(), keyword);
-    }*/
-
-    private List<ProfiOrder> searchOrdersAlternative(String keyword, OrderExtractionService extractionService) throws Exception {
-        System.out.println("=== USING ALTERNATIVE SEARCH ===");
-
-        String encodedKeyword = URLEncoder.encode(keyword, StandardCharsets.UTF_8.toString());
-
-        /*String searchUrl = "https://profi.ru/backoffice/n.php?q=" + encodedKeyword;*/ /* меняем на @Value*/
-        String searchUrl = this.searchUrl + encodedKeyword;
-
-        webDriverManager.getDriver().get(searchUrl);
-        Thread.sleep(8000);
-        scrollPage();
-
-        return extractionService.extractOrders(webDriverManager.getDriver(), keyword);
+    /** НОВЫЙ МЕТОД: ПЕРЕЗАПУСК БРАУЗЕРА ПРИ ОШИБКАХ */
+    private void restartBrowser() {
+        try {
+            log.info("Restarting browser...");
+            webDriverManager.quitDriver();
+            Thread.sleep(2000);
+            /** Браузер автоматически пересоздастся при следующем getDriver() */
+        } catch (Exception ex) {
+            log.error("Error during browser restart: {}", ex.getMessage());
+        }
     }
 
     private WebElement findSearchHistoryItem(String keyword) {
@@ -206,7 +178,7 @@ public class SearchService {
 
     private WebElement findSearchButton() {
         String[] selectors = {
-                                                                                  /* меняем на @Value*/
+                /* меняем на @Value*/
                 /*"button[data-testid='fulltext_view_mode_test_id']",
                 ".SearchFieldStyles__ViewStateBlock-sc-10dn6mx-4",
                 "[class*='search'] button",

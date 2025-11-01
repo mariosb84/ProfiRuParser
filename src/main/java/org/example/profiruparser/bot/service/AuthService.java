@@ -7,6 +7,7 @@ import org.example.profiruparser.domain.dto.SignInRequest;
 import org.example.profiruparser.domain.dto.SignUpRequest;
 import org.example.profiruparser.domain.model.User;
 import org.example.profiruparser.errors.InvalidCredentialsException;
+import org.example.profiruparser.parser.service.ProfiParserService; /** ДОБАВЛЯЕМ ИМПОРТ ПАРСЕРА */
 import org.example.profiruparser.service.AuthenticationService;
 import org.example.profiruparser.service.SubscriptionService;
 import org.example.profiruparser.service.UserServiceData;
@@ -32,6 +33,10 @@ public class AuthService {
     private final MenuFactory menuFactory;
 
     private final SubscriptionService subscriptionService;
+
+    private final AutoSearchService autoSearchService;
+    private final SearchService searchService;
+    private final ProfiParserService parser; /** ДОБАВЛЯЕМ ПАРСЕР ДЛЯ ЗАКРЫТИЯ БРАУЗЕРА */
 
     public void handleLoginCommand(Long chatId) {
         stateManager.setUserState(chatId, UserStateManager.STATE_WAITING_USERNAME);
@@ -147,8 +152,41 @@ public class AuthService {
     }
 
     public void handleLogout(Long chatId) {
-        stateManager.clearUserData(chatId);
-        telegramService.sendMessage(chatId, "👋 До свидания! Для возобновления работы нажмите : /start");
+        try {
+            /** 1. ОТКЛЮЧАЕМ АВТОПОИСК (с проверкой был ли он включен) */
+            /* ПРОВЕРЯЕМ БЫЛ ЛИ ВКЛЮЧЕН АВТОПОИСК ПЕРЕД ОСТАНОВКОЙ*/
+            boolean wasAutoSearchEnabled = autoSearchService.isAutoSearchRunning(chatId);
+
+            /** 2. ОСТАНАВЛИВАЕМ АВТОПОИСК БЕЗ СООБЩЕНИЙ*/
+            autoSearchService.stopAutoSearch(chatId);
+
+            /** 3. СООБЩЕНИЕ ТОЛЬКО ЕСЛИ БЫЛ ВКЛЮЧЕН*/
+            if (wasAutoSearchEnabled) {
+                telegramService.sendMessage(chatId, "⏰ ⏹️ Автопоиск отключен");
+            }
+            /** 4. ОТМЕНЯЕМ ТЕКУЩИЕ ПОИСКИ */
+            searchService.cancelSearch(chatId);
+
+            /** 5. ЗАКРЫВАЕМ БРАУЗЕР ПАРСЕРА (ДАЖЕ ЕСЛИ ОН "УМЕР") */
+            try {
+                parser.close(); /** этот вызов должен дойти до WebDriverManager.quitDriver() */
+                log.info("Parser browser closed for chatId: {}", chatId);
+            } catch (Exception e) {
+                log.warn("Parser browser already closed for chatId: {}", chatId);
+            }
+
+            /** 6. ОЧИЩАЕМ СОСТОЯНИЕ */
+            stateManager.clearUserData(chatId);
+
+            /** 7. ОТПРАВЛЯЕМ СТАРТОВОЕ СООБЩЕНИЕ*/
+            telegramService.sendMessage(chatId, "👋 До свидания! Для возобновления работы нажмите : /start");
+
+        } catch (Exception e) {
+            log.error("Error during logout for chatId: {}", chatId, e);
+            /** ДАЖЕ ПРИ ОШИБКЕ ПРОДОЛЖАЕМ ОЧИСТКУ */
+            stateManager.clearUserData(chatId);
+            telegramService.sendMessage(chatId, "👋 Сессия завершена");
+        }
     }
 
 }

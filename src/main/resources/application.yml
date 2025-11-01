@@ -5,9 +5,9 @@ spring:
   server:
     port: 9900
   datasource:
-    url: "jdbc:postgresql://localhost:5432/profi_bot_auth"
-    username: "postgres"
-    password: "SB14041984sb"
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/profi_bot_auth}
+    username: ${DATABASE_USERNAME:postgres}
+    password: ${DATABASE_PASSWORD:SB14041984sb}
     driver-class-name: "org.postgresql.Driver"
   jpa:
     hibernate:
@@ -21,8 +21,8 @@ spring:
 
 # Telegram Bot
 tg:
-  username: "profibotparser_bot"
-  token: "7641090817:AAHssxSX2G6mUE70LgvMHiI-XA-IddrArRE"
+  username: ${TELEGRAM_BOT_USERNAME:profibotparser_bot}
+  token: ${TELEGRAM_BOT_TOKEN:7641090817:AAHssxSX2G6mUE70LgvMHiI-XA-IddrArRE}
 
 # WebDriver
 webdrivermanager:
@@ -41,8 +41,8 @@ logging:
 
 # YooKassa Payment System
 yookassa:
-  shop-id: "1181320"
-  secret-key: "test_7AfQYlI0WOQVImchsPcaNkIfQdreb47ttSLDTnSqchA"
+  shop-id: ${YOOKASSA_SHOP_ID:1181320}
+  secret-key: ${YOOKASSA_SECRET_KEY:test_7AfQYlI0WOQVImchsPcaNkIfQdreb47ttSLDTnSqchA}
   test-mode: true
 
 # Application Settings

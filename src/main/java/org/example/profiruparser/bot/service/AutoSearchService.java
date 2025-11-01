@@ -32,6 +32,8 @@ public class AutoSearchService {
 
     private final ScheduledExecutorService scheduler = java.util.concurrent.Executors.newScheduledThreadPool(1);
     private final Map<Long, ScheduledFuture<?>> scheduledTasks = new ConcurrentHashMap<>();
+    /** MAP ДЛЯ ОТСЛЕЖИВАНИЯ БЫЛ ЛИ ВКЛЮЧЕН АВТОПОИСК ДЛЯ КАЖДОГО ПОЛЬЗОВАТЕЛЯ */
+    private final Map<Long, Boolean> userAutoSearchStatus = new ConcurrentHashMap<>();
 
     public void handleAutoSearchCommand(Long chatId) {
         stateManager.setUserState(chatId, UserStateManager.STATE_AUTO_SEARCH);
@@ -100,14 +102,36 @@ public class AutoSearchService {
         }
     }
 
+    /** МЕТОД ДЛЯ ОТКЛЮЧЕНИЯ АВТОПОИСКА С ПРОВЕРКОЙ БЫЛ ЛИ ОН ВКЛЮЧЕН (с обновлением меню) */
     public void handleDisableAutoSearch(Long chatId) {
-        stopAutoSearch(chatId);
-        stateManager.setUserState(chatId, UserStateManager.STATE_AUTO_SEARCH);
-        telegramService.sendMessage(chatId, "✅ Автопоиск отключен");
-        sendAutoSearchMenuWithStatus(chatId);
+        handleDisableAutoSearch(chatId, true); /* по умолчанию обновляем меню*/
     }
 
-    private void startAutoSearch(Long chatId, int intervalMinutes) {
+    /** МЕТОД ДЛЯ ОТКЛЮЧЕНИЯ АВТОПОИСКА С ПРОВЕРКОЙ БЫЛ ЛИ ОН ВКЛЮЧЕН */
+    public void handleDisableAutoSearch(Long chatId, boolean updateMenu) {
+        /** ПРОВЕРЯЕМ БЫЛ ЛИ ВКЛЮЧЕН АВТОПОИСК (по наличию в scheduledTasks) */
+        boolean wasEnabled = scheduledTasks.containsKey(chatId);
+
+        /** ОСТАНАВЛИВАЕМ АВТОПОИСК */
+        stopAutoSearch(chatId);
+
+        /** СООБЩЕНИЕ ТОЛЬКО ЕСЛИ БЫЛ ВКЛЮЧЕН */
+        if (wasEnabled) {
+            telegramService.sendMessage(chatId, "⏰ ⏹️ Автопоиск отключен");
+            log.info("AutoSearch disabled for chatId: {}", chatId);
+        }
+        /** ЕСЛИ НЕ БЫЛ ВКЛЮЧЕН - НИЧЕГО НЕ ДЕЛАЕМ И НЕ ОТПРАВЛЯЕМ СООБЩЕНИЕ */
+
+        /** ВСЕГДА ОБНОВЛЯЕМ МЕНЮ ЧТОБЫ КНОПКА ИЗМЕНИЛАСЬ */
+
+        /** ОБНОВЛЯЕМ МЕНЮ ТОЛЬКО ЕСЛИ НУЖНО */
+        if (updateMenu) {
+            sendAutoSearchMenuWithStatus(chatId);
+        }
+    }
+
+    /** ИЗМЕНЯЕМ НА PUBLIC ЧТОБЫ БЫЛ ДОСТУПЕН ИЗНУТРИ КЛАССА */
+    public void startAutoSearch(Long chatId, int intervalMinutes) {
         stopAutoSearch(chatId);
 
         User user = userService.findByTelegramChatId(chatId);
@@ -118,7 +142,7 @@ public class AutoSearchService {
 
         final String username = user.getUsername();
 
-        /* ИЗМЕНЕНИЕ: delay = intervalMinutes, period = intervalMinutes
+        /** ИЗМЕНЕНИЕ: delay = intervalMinutes, period = intervalMinutes
          Теперь первый поиск через intervalMinutes, а не сразу*/
         ScheduledFuture<?> future = scheduler.scheduleAtFixedRate(() -> {
             try {
@@ -136,14 +160,17 @@ public class AutoSearchService {
         }, intervalMinutes, intervalMinutes, TimeUnit.MINUTES); /* ← delay = intervalMinutes*/
 
         scheduledTasks.put(chatId, future);
+        /** СОХРАНЯЕМ СТАТУС АВТОПОИСКА */
+        userAutoSearchStatus.put(chatId, true);
         stateManager.setUserInterval(chatId, intervalMinutes);
     }
 
-    private void stopAutoSearch(Long chatId) {
+    public void stopAutoSearch(Long chatId) {
         ScheduledFuture<?> future = scheduledTasks.get(chatId);
         if (future != null) {
             future.cancel(false);
             scheduledTasks.remove(chatId);
+            userAutoSearchStatus.remove(chatId); /** ОЧИЩАЕМ СТАТУС */
         }
         stateManager.removeUserInterval(chatId);
     }
@@ -197,6 +224,7 @@ public class AutoSearchService {
     public void shutdown() {
         scheduler.shutdown();
         scheduledTasks.values().forEach(future -> future.cancel(false));
+        userAutoSearchStatus.clear(); /** ОЧИЩАЕМ СТАТУСЫ ПРИ ЗАВЕРШЕНИИ */
     }
 
     public void handleIntervalButton(Long chatId, String text) {
@@ -217,6 +245,11 @@ public class AutoSearchService {
 
         telegramService.sendMessage(chatId, "✅ Интервал автопоиска изменен на " + interval + " минут");
         sendAutoSearchMenuWithStatus(chatId);
+    }
+
+    /** Метод проверки был ли включен автопоиск */
+    public boolean isAutoSearchRunning(Long chatId) {
+        return scheduledTasks.containsKey(chatId);
     }
 
 }

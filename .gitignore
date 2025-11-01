@@ -52,3 +52,6 @@ before_search_*
 alternative_search_*
 debug/
 *.log
+
+###  .env ###
+.env

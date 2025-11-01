@@ -1,5 +1,6 @@
 package org.example.profiruparser.parser.service.impl;
 
+import lombok.extern.slf4j.Slf4j;
 import org.example.profiruparser.parser.service.ProfiParserService;
 import org.example.profiruparser.domain.dto.ProfiOrder;
 import org.example.profiruparser.errors.LoginException;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+@Slf4j /** ДОБАВЛЯЕМ ЛОГГЕР */
 @Service
 public class ProfiParserServiceImpl implements ProfiParserService {
 
@@ -46,7 +48,16 @@ public class ProfiParserServiceImpl implements ProfiParserService {
 
     @Override
     public void close() {
-        webDriverManager.quitDriver();
+        /** УЛУЧШЕННЫЙ МЕТОД ЗАКРЫТИЯ С ОБРАБОТКОЙ ОШИБОК */
+        try {
+            if (webDriverManager != null) {
+                webDriverManager.quitDriver();
+                log.info("Browser successfully closed");
+            }
+        } catch (Exception e) {
+            log.warn("Browser already closed or not available: {}", e.getMessage());
+            /** ИГНОРИРУЕМ ОШИБКИ - ВАЖНО ЧТО РЕСУРСЫ ОСВОБОЖДЕНЫ */
+        }
     }
 
     /* ДОБАВИТЬ ЭТОТ МЕТОД*/
