@@ -54,7 +54,11 @@ public class WebDriverManager {
 
         if (System.getenv("INSIDE_DOCKER") != null) {
             options.addArguments("--no-sandbox", "--disable-dev-shm-usage", "--headless");
-            options.setBinary("/usr/bin/google-chrome");
+
+            /*options.setBinary("/usr/bin/google-chrome");*/
+            options.setBinary("/usr/bin/google-chrome-stable");
+
+
         } else {
             options.setBinary("C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe");
         }
