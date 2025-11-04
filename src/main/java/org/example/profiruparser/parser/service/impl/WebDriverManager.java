@@ -22,6 +22,7 @@ public class WebDriverManager {
     @Autowired
     public WebDriverManager(ParserConfig parserConfig) {
         this.parserConfig = parserConfig;
+        Runtime.getRuntime().addShutdownHook(new Thread(this::forceQuitAllChromeProcesses));
     }
 
     public WebDriver getDriver() {
@@ -39,8 +40,9 @@ public class WebDriverManager {
     }
 
     private void initDriver() {
-        io.github.bonigarcia.wdm.WebDriverManager.chromedriver().setup();
+        killChromeProcesses();
 
+        io.github.bonigarcia.wdm.WebDriverManager.chromedriver().setup();
         System.setProperty("wdm.cachePath", parserConfig.getWebDriverCachePath());
 
         ChromeOptions options = new ChromeOptions();
@@ -49,16 +51,14 @@ public class WebDriverManager {
                 "--disable-blink-features=AutomationControlled",
                 "--remote-allow-origins=*",
                 "--disable-notifications",
-                "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
+                "--no-sandbox",
+                "--disable-dev-shm-usage",
+                "--disable-gpu"
         );
 
         if (System.getenv("INSIDE_DOCKER") != null) {
-            options.addArguments("--no-sandbox", "--disable-dev-shm-usage", "--headless");
-
-            /*options.setBinary("/usr/bin/google-chrome");*/
+            options.addArguments("--headless");
             options.setBinary("/usr/bin/google-chrome-stable");
-
-
         } else {
             options.setBinary("C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe");
         }
@@ -69,10 +69,40 @@ public class WebDriverManager {
 
     public void quitDriver() {
         if (driver != null) {
-            driver.quit();
-            driver = null;
-            wait = null;
+            try {
+                driver.quit();
+            } catch (Exception e) {
+                /* ignore*/
+            } finally {
+                driver = null;
+                wait = null;
+                killChromeProcesses();
+            }
         }
+    }
+
+    private void killChromeProcesses() {
+        try {
+            String os = System.getProperty("os.name").toLowerCase();
+
+            if (os.contains("win")) {
+                Runtime.getRuntime().exec("taskkill /F /IM chrome.exe");
+                Runtime.getRuntime().exec("taskkill /F /IM chromedriver.exe");
+            } else {
+                Runtime.getRuntime().exec("pkill -f chrome");
+                Runtime.getRuntime().exec("pkill -f chromedriver");
+                Runtime.getRuntime().exec("pkill -f google-chrome");
+            }
+
+            Thread.sleep(1000);
+        } catch (Exception e) {
+            /* ignore*/
+        }
+    }
+
+    public void forceQuitAllChromeProcesses() {
+        quitDriver();
+        killChromeProcesses();
     }
 
     public boolean isDriverInitialized() {

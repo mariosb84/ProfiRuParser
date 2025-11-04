@@ -20,6 +20,10 @@ public class ProfiParserServiceImpl implements ProfiParserService {
     private final SearchService searchService;
     private final OrderExtractionService orderExtractionService;
 
+    /* ✅ ДОБАВИТЬ ЭТИ 2 СТРОЧКИ:*/
+    private int searchCounter = 0;
+    private static final int MAX_SEARCHES = 3;
+
     @Autowired
     public ProfiParserServiceImpl(
             @Qualifier("seleniumWebDriverManager") WebDriverManager webDriverManager,
@@ -38,6 +42,18 @@ public class ProfiParserServiceImpl implements ProfiParserService {
         if (!loginService.isLoggedIn()) {
             throw new IllegalStateException("Требуется авторизация");
         }
+
+        /* ✅ ДОБАВИТЬ ЭТОТ БЛОК ПЕРЕД ПОИСКОМ:*/
+        if (searchCounter >= MAX_SEARCHES) {
+            System.out.println("Auto-restarting browser after " + MAX_SEARCHES + " searches");
+            this.close();
+            /* Нужно перелогиниться после перезапуска*/
+            /* this.ensureLoggedIn(login, password);*/  /*если есть доступ к логину/паролю*/
+            searchCounter = 0;
+        }
+
+        searchCounter++;
+
         return searchService.searchOrders(keyword, orderExtractionService);
     }
 
@@ -67,3 +83,4 @@ public class ProfiParserServiceImpl implements ProfiParserService {
     }
 
 }
+

@@ -49,7 +49,7 @@ public class SearchService {
             log.error("Main search failed, trying alternative: {}", e.getMessage());
 
             /** ПЕРЕЗАПУСКАЕМ БРАУЗЕР ПЕРЕД АЛЬТЕРНАТИВНЫМ ПОИСКОМ */
-            restartBrowser();
+           /* restartBrowser();*/
 
             return searchOrdersAlternative(keyword, extractionService);
         }
@@ -71,7 +71,7 @@ public class SearchService {
                 this.searchInput
         ));
 
-        // ВСЕГДА ИСПОЛЬЗУЕМ РУЧНОЙ ВВОД (ИСТОРИЯ ОТКЛЮЧЕНА)
+        /* ВСЕГДА ИСПОЛЬЗУЕМ РУЧНОЙ ВВОД (ИСТОРИЯ ОТКЛЮЧЕНА)*/
         log.info("Using manual input (history disabled)");
 
         /* УСИЛЕННАЯ ОЧИСТКА ПОЛЯ*/
@@ -128,22 +128,22 @@ public class SearchService {
         } catch (Exception e) {
             log.error("Alternative search also failed: {}", e.getMessage());
             /** ПРИ ОШИБКЕ В АЛЬТЕРНАТИВНОМ ПОИСКЕ - ПЕРЕЗАПУСКАЕМ БРАУЗЕР */
-            restartBrowser();
+            /*restartBrowser();*/
             throw e;
         }
     }
 
     /** НОВЫЙ МЕТОД: ПЕРЕЗАПУСК БРАУЗЕРА ПРИ ОШИБКАХ */
-    private void restartBrowser() {
+ /*   private void restartBrowser() {
         try {
             log.info("Restarting browser...");
             webDriverManager.quitDriver();
             Thread.sleep(2000);
-            /** Браузер автоматически пересоздастся при следующем getDriver() */
+            *//** Браузер автоматически пересоздастся при следующем getDriver() *//*
         } catch (Exception ex) {
             log.error("Error during browser restart: {}", ex.getMessage());
         }
-    }
+    }*/
 
     private WebElement findSearchHistoryItem(String keyword) {
         List<WebElement> historyItems = webDriverManager.getDriver().findElements(By.cssSelector(
@@ -214,4 +214,6 @@ public class SearchService {
     }
 
 }
+
+
 
