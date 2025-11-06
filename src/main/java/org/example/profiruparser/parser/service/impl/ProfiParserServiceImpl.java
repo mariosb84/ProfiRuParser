@@ -5,14 +5,14 @@ import org.example.profiruparser.parser.service.ProfiParserService;
 import org.example.profiruparser.domain.dto.ProfiOrder;
 import org.example.profiruparser.errors.LoginException;
 import org.openqa.selenium.WebDriver;
-import org.springframework.beans.factory.annotation.Autowired;
+/*import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Service;*/
 
 import java.util.List;
 
 @Slf4j /** ДОБАВЛЯЕМ ЛОГГЕР */
-@Service
+/*@Service*/
 public class ProfiParserServiceImpl implements ProfiParserService {
 
     private final WebDriverManager webDriverManager;
@@ -24,8 +24,8 @@ public class ProfiParserServiceImpl implements ProfiParserService {
     private int searchCounter = 0;
     private static final int MAX_SEARCHES = 3;
 
-    @Autowired
-    public ProfiParserServiceImpl(
+    /*@Autowired*/
+ /*   public ProfiParserServiceImpl(
             @Qualifier("seleniumWebDriverManager") WebDriverManager webDriverManager,
             @Qualifier("parserLoginService") LoginService loginService,
             @Qualifier("parserSearchService") SearchService searchService,
@@ -35,6 +35,15 @@ public class ProfiParserServiceImpl implements ProfiParserService {
         this.loginService = loginService;
         this.searchService = searchService;
         this.orderExtractionService = orderExtractionService;
+    }*/
+
+    /* 🔥 ДОБАВИТЬ ПУСТОЙ КОНСТРУКТОР БЕЗ АННОТАЦИЙ */
+    public ProfiParserServiceImpl() {
+        this.webDriverManager = null;
+        this.loginService = null;
+        this.searchService = null;
+        this.orderExtractionService = null;
+        System.out.println("❌ ProfiParserServiceImpl CREATED BUT DISABLED");
     }
 
     @Override
@@ -59,12 +68,12 @@ public class ProfiParserServiceImpl implements ProfiParserService {
 
     @Override
     public void ensureLoggedIn(String login, String password) throws LoginException {
-        loginService.performLogin(login, password);
+        /*loginService.performLogin(login, password);*/
     }
 
     @Override
     public void close() {
-        /** УЛУЧШЕННЫЙ МЕТОД ЗАКРЫТИЯ С ОБРАБОТКОЙ ОШИБОК */
+       /* *//** УЛУЧШЕННЫЙ МЕТОД ЗАКРЫТИЯ С ОБРАБОТКОЙ ОШИБОК *//*
         try {
             if (webDriverManager != null) {
                 webDriverManager.quitDriver();
@@ -72,14 +81,16 @@ public class ProfiParserServiceImpl implements ProfiParserService {
             }
         } catch (Exception e) {
             log.warn("Browser already closed or not available: {}", e.getMessage());
-            /** ИГНОРИРУЕМ ОШИБКИ - ВАЖНО ЧТО РЕСУРСЫ ОСВОБОЖДЕНЫ */
-        }
+            *//** ИГНОРИРУЕМ ОШИБКИ - ВАЖНО ЧТО РЕСУРСЫ ОСВОБОЖДЕНЫ *//*
+        }*/
     }
 
     /* ДОБАВИТЬ ЭТОТ МЕТОД*/
     @Override
     public WebDriver getDriver() {
-        return webDriverManager.getDriver();
+        /*return webDriverManager.getDriver(); */
+        return null;
+
     }
 
 }

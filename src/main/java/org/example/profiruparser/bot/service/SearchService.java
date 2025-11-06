@@ -44,10 +44,14 @@ public class SearchService {
     private final UserStateManager stateManager;
     private final SeenOrderService seenOrderService;
 
-    /* ИСПОЛЬЗУЕМ FIXED THREAD POOL ДЛЯ УПРАВЛЕНИЯ ПОТОКАМИ ПОИСКА */
+
+/* ИСПОЛЬЗУЕМ FIXED THREAD POOL ДЛЯ УПРАВЛЕНИЯ ПОТОКАМИ ПОИСКА */
+
     private final ExecutorService executor = Executors.newFixedThreadPool(4);
 
-    /* MAP ДЛЯ ХРАНЕНИЯ АКТИВНЫХ ПОИСКОВ ДЛЯ ВОЗМОЖНОСТИ ОТМЕНЫ */
+
+/* MAP ДЛЯ ХРАНЕНИЯ АКТИВНЫХ ПОИСКОВ ДЛЯ ВОЗМОЖНОСТИ ОТМЕНЫ */
+
     private final Map<Long, Future<?>> activeSearches = new ConcurrentHashMap<>();
 
     public void handleManualSearch(Long chatId, String query) {
@@ -59,14 +63,18 @@ public class SearchService {
             return;
         }
 
-        /* СОХРАНЯЕМ Future ДЛЯ ВОЗМОЖНОСТИ ОТМЕНЫ */
+
+/* СОХРАНЯЕМ Future ДЛЯ ВОЗМОЖНОСТИ ОТМЕНЫ */
+
         Future<?> future = executor.submit(() -> {
             try {
                 telegramService.sendMessage(chatId, "🔍 Идет поиск...");
                 parser.ensureLoggedIn(user.getUsername(), user.getPassword());
                 List<ProfiOrder> orders = parser.parseOrders(query);
 
-                /* ФИЛЬТРАЦИЯ: оставляем только новые заказы */
+
+/* ФИЛЬТРАЦИЯ: оставляем только новые заказы */
+
                 List<ProfiOrder> newOrders = filterNewOrders(user.getId(), orders);
 
                 if (newOrders.isEmpty()) {
@@ -74,24 +82,32 @@ public class SearchService {
                 } else {
                     telegramService.sendMessage(chatId, "✅ Найдено: " + newOrders.size() + " заказов");
 
-                    /* Сохраняем как просмотренные */
+
+/* Сохраняем как просмотренные */
+
                     seenOrderService.markOrdersAsSeen(user.getId(),
                             newOrders.stream().map(ProfiOrder::getId).collect(Collectors.toList()));
 
                     newOrders.forEach(order -> sendOrderCard(chatId, order));
                 }
             } catch (Exception e) {
-                /* ПРОВЕРЯЕМ НЕ ОТМЕНЕН ЛИ ПОИСК */
+
+/* ПРОВЕРЯЕМ НЕ ОТМЕНЕН ЛИ ПОИСК */
+
                 if (!Thread.currentThread().isInterrupted()) {
                     telegramService.sendMessage(chatId, "❌ Ошибка поиска: " + e.getMessage());
                 }
             } finally {
-                /* УДАЛЯЕМ ИЗ activeSearches ПОСЛЕ ЗАВЕРШЕНИЯ */
+
+/* УДАЛЯЕМ ИЗ activeSearches ПОСЛЕ ЗАВЕРШЕНИЯ */
+
                 activeSearches.remove(chatId);
             }
         });
 
-        /* СОХРАНЯЕМ Future ДЛЯ ВОЗМОЖНОСТИ ОТМЕНЫ */
+
+/* СОХРАНЯЕМ Future ДЛЯ ВОЗМОЖНОСТИ ОТМЕНЫ */
+
         activeSearches.put(chatId, future);
     }
 
@@ -117,12 +133,16 @@ public class SearchService {
                 .filter(k -> k != null && !k.trim().isEmpty())
                 .toList();
 
-        /* СОХРАНЯЕМ Future ДЛЯ ВОЗМОЖНОСТИ ОТМЕНЫ */
+
+/* СОХРАНЯЕМ Future ДЛЯ ВОЗМОЖНОСТИ ОТМЕНЫ */
+
         Future<?> future = executor.submit(() -> {
             try {
                 telegramService.sendMessage(chatId, "🚀 Идет поиск по " + activeKeywords.size() + " ключам...");
 
-                /* ПЕСОЧНЫЕ ЧАСЫ С MARKDOWN */
+
+/* ПЕСОЧНЫЕ ЧАСЫ С MARKDOWN */
+
                 SendMessage hourglassMessage = SendMessage.builder()
                         .chatId(chatId.toString())
                         .text("*⌛*")
@@ -134,7 +154,9 @@ public class SearchService {
                 LinkedHashSet<ProfiOrder> allOrders = new LinkedHashSet<>();
 
                 for (String keyword : activeKeywords) {
-                    /* ПРОВЕРЯЕМ НЕ ОТМЕНЕН ЛИ ПОИСК ПЕРЕД КАЖДЫМ КЛЮЧЕМ */
+
+/* ПРОВЕРЯЕМ НЕ ОТМЕНЕН ЛИ ПОИСК ПЕРЕД КАЖДЫМ КЛЮЧЕМ */
+
                     if (Thread.currentThread().isInterrupted()) {
                         log.info("Search interrupted for chatId: {}", chatId);
                         return;
@@ -143,7 +165,9 @@ public class SearchService {
                     Thread.sleep(1000);
                 }
 
-                /* ФИЛЬТРАЦИЯ: оставляем только новые заказы */
+
+/* ФИЛЬТРАЦИЯ: оставляем только новые заказы */
+
                 List<ProfiOrder> newOrders = filterNewOrders(user.getId(), allOrders.stream().toList());
 
                 if (newOrders.isEmpty()) {
@@ -151,28 +175,38 @@ public class SearchService {
                 } else {
                     telegramService.sendMessage(chatId, "✅ Найдено: " + newOrders.size() + " заказов");
 
-                    /* Сохраняем как просмотренные */
+
+/* Сохраняем как просмотренные */
+
                     seenOrderService.markOrdersAsSeen(user.getId(),
                             newOrders.stream().map(ProfiOrder::getId).collect(Collectors.toList()));
 
                     newOrders.forEach(order -> sendOrderCard(chatId, order));
                 }
             } catch (Exception e) {
-                /* ПРОВЕРЯЕМ НЕ ОТМЕНЕН ЛИ ПОИСК */
+
+/* ПРОВЕРЯЕМ НЕ ОТМЕНЕН ЛИ ПОИСК */
+
                 if (!Thread.currentThread().isInterrupted()) {
                     telegramService.sendMessage(chatId, "❌ Ошибка поиска: " + e.getMessage());
                 }
             } finally {
-                /* УДАЛЯЕМ ИЗ activeSearches ПОСЛЕ ЗАВЕРШЕНИЯ */
+
+/* УДАЛЯЕМ ИЗ activeSearches ПОСЛЕ ЗАВЕРШЕНИЯ */
+
                 activeSearches.remove(chatId);
             }
         });
 
-        /* СОХРАНЯЕМ Future ДЛЯ ВОЗМОЖНОСТИ ОТМЕНЫ */
+
+/* СОХРАНЯЕМ Future ДЛЯ ВОЗМОЖНОСТИ ОТМЕНЫ */
+
         activeSearches.put(chatId, future);
     }
 
-    /* НОВЫЙ МЕТОД: фильтрация просмотренных заказов */
+
+/* НОВЫЙ МЕТОД: фильтрация просмотренных заказов */
+
     private List<ProfiOrder> filterNewOrders(Long userId, List<ProfiOrder> orders) {
         Set<String> seenOrderIds = seenOrderService.getSeenOrderIds(userId);
 
@@ -206,7 +240,9 @@ public class SearchService {
                 .chatId(chatId.toString())
                 .text(text)
                 .replyMarkup(markup)
-                .parseMode("Markdown")  /* Для жирного текста */
+                .parseMode("Markdown")
+/* Для жирного текста */
+
                 .build();
 
         telegramService.sendMessage(message);
@@ -234,7 +270,9 @@ public class SearchService {
         }
     }
 
-    /* МЕТОД ДЛЯ ОТМЕНЫ АКТИВНОГО ПОИСКА */
+
+/* МЕТОД ДЛЯ ОТМЕНЫ АКТИВНОГО ПОИСКА */
+
     public void cancelSearch(Long chatId) {
         Future<?> future = activeSearches.get(chatId);
         if (future != null) {
@@ -244,10 +282,13 @@ public class SearchService {
         }
     }
 
-    /* ЗАКРЫВАЕМ EXECUTOR SERVICE ПРИ ЗАВЕРШЕНИИ ПРИЛОЖЕНИЯ */
+
+/* ЗАКРЫВАЕМ EXECUTOR SERVICE ПРИ ЗАВЕРШЕНИИ ПРИЛОЖЕНИЯ */
+
     @PreDestroy
     public void shutdown() {
         executor.shutdown();
     }
 
 }
+
