@@ -49,7 +49,9 @@ public class OrderExtractionService {
             try {
                 WebElement card = cards.get(i);
                 ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView({block: 'center'});", card);
-                Thread.sleep(100);
+
+                /*Thread.sleep(100);*/                                                     /*меняем на "умные" задержки*/
+                ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView({behavior: 'auto', block: 'center'});", card);
 
                 if (!card.isDisplayed()) continue;
 
