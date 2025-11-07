@@ -1,5 +1,6 @@
 package org.example.profiruparser.parser.service.impl;
 
+import lombok.extern.slf4j.Slf4j;
 import org.example.profiruparser.domain.dto.ProfiOrder;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
@@ -14,6 +15,7 @@ import java.util.List;
 
 @Service("orderExtractionService")
 @Qualifier("orderExtractionService")
+@Slf4j
 public class OrderExtractionService {
 
     @Value("${app.profi.selectors.order-cards}")
@@ -43,7 +45,8 @@ public class OrderExtractionService {
 
         /*List<WebElement> cards = driver.findElements(By.cssSelector("a[data-testid$='_order-snippet']"));*/ /*меняем на @Value*/
         List<WebElement> cards = driver.findElements(By.cssSelector(this.orderCards));
-        System.out.println("Total cards to process: " + cards.size());
+        /*System.out.println("Total cards to process: " + cards.size());*/
+        log.info("Total cards to process: " + cards.size());
 
         for (int i = 0; i < cards.size(); i++) {
             try {
@@ -71,10 +74,12 @@ public class OrderExtractionService {
                     order.setCreationTime(extractCreationTime(card));
 
                     orders.add(order);
-                    System.out.println("✅ ADDED: " + title + " | Time: " + order.getCreationTime());
+                   /* System.out.println("✅ ADDED: " + title + " | Time: " + order.getCreationTime());*/
+                    log.info("✅ ADDED: " + title + " | Time: " + order.getCreationTime());
                 }
             } catch (Exception e) {
-                System.err.println("Error processing card " + i + ": " + e.getMessage());
+                /*System.err.println("Error processing card " + i + ": " + e.getMessage());*/
+                log.error("Error processing card " + i + ": " + e.getMessage());
             }
         }
 

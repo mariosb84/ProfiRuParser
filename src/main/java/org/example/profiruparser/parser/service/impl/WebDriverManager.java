@@ -1,5 +1,6 @@
 package org.example.profiruparser.parser.service.impl;
 
+import lombok.extern.slf4j.Slf4j;
 import org.example.profiruparser.parser.config.ParserConfig;
 import org.example.profiruparser.parser.service.async.BrowserPool;
 import org.openqa.selenium.JavascriptExecutor;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Component;
 import java.util.concurrent.*;
 
 @Component("seleniumWebDriverManager")
+@Slf4j
 public class WebDriverManager implements BrowserPool {
 
     private final BlockingQueue<WebDriver> browserPool = new LinkedBlockingQueue<>();
@@ -64,7 +66,8 @@ public class WebDriverManager implements BrowserPool {
         driver.manage().timeouts().pageLoadTimeout(60, TimeUnit.SECONDS);
 
         driver.get("https://profi.ru/");                                             /*меняем на "умные" задержки*/
-        System.out.println("🔥 Browser pre-warmed: " + driver.getTitle());
+        /*System.out.println("🔥 Browser pre-warmed: " + driver.getTitle());*/
+        log.info("🔥 Browser pre-warmed: {}", driver.getTitle());
 
         return driver;
     }
