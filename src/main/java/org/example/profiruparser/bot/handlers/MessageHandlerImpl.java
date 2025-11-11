@@ -46,6 +46,8 @@ public class MessageHandlerImpl implements MessageHandler {
     private final MenuFactory menuFactory;
     private final ProfiParserService parser;
 
+    private final SearchQueueService searchQueueService;
+
     @Override
     public void handleTextMessage(Message message) {
         Long chatId = message.getChatId();
@@ -218,22 +220,39 @@ public class MessageHandlerImpl implements MessageHandler {
                 telegramService.sendMessage(confirmMessage);
                 return true;
 
+            /** В методе handleInputStates обновляем case для STATE_WAITING_SEARCH_CONFIRMATION */
             case UserStateManager.STATE_WAITING_SEARCH_CONFIRMATION:
+                if (text.equals("✅ Начать поиск")) {
+                    String searchQuery = stateManager.getTempSearchQuery(chatId);
+                    /** ЗАПУСК РУЧНОГО ПОИСКА ЧЕРЕЗ ОЧЕРЕДЬ */
+                    searchQueueService.addToQueue(chatId, searchQuery, SearchTask.SearchType.MANUAL);
+                    stateManager.removeTempSearchQuery(chatId);
+                    stateManager.setUserState(chatId, UserStateManager.STATE_AUTHORIZED_MAIN);
+                    sendMainMenu(chatId, true);
+                } else if (text.equals("❌ Отмена")) {
+                    telegramService.sendMessage(chatId, "❌ Поиск отменен");
+                    stateManager.removeTempSearchQuery(chatId);
+                    stateManager.setUserState(chatId, UserStateManager.STATE_AUTHORIZED_MAIN);
+                    sendMainMenu(chatId, false);
+                }
+                return true;
+
+          /*  case UserStateManager.STATE_WAITING_SEARCH_CONFIRMATION:
                 if (text.equals("✅ Начать поиск")) {
                     String searchQuery = stateManager.getTempSearchQuery(chatId);
                     searchService.handleManualSearch(chatId, searchQuery);
                     stateManager.removeTempSearchQuery(chatId);
                     stateManager.setUserState(chatId, UserStateManager.STATE_AUTHORIZED_MAIN);
-                    /*sendMainMenu(chatId);*/
-                    sendMainMenu(chatId, true); /* ← ИЗМЕНИТЬ НА true*/
+                    *//*sendMainMenu(chatId);*//*
+                    sendMainMenu(chatId, true); *//* ← ИЗМЕНИТЬ НА true*//*
                 } else if (text.equals("❌ Отмена")) {
                     telegramService.sendMessage(chatId, "❌ Поиск отменен");
                     stateManager.removeTempSearchQuery(chatId);
                     stateManager.setUserState(chatId, UserStateManager.STATE_AUTHORIZED_MAIN);
-                    /*sendMainMenu(chatId);*/
-                    sendMainMenu(chatId, false); /* ← ОСТАВИТЬ false*/
+                    *//*sendMainMenu(chatId);*//*
+                    sendMainMenu(chatId, false); *//* ← ОСТАВИТЬ false*//*
                 }
-                return true;
+                return true;*/
 
             /* Добавляем в switch (userState) после существующих case:*/
             case UserStateManager.STATE_CHANGE_CREDENTIALS_USERNAME:
@@ -317,7 +336,7 @@ public class MessageHandlerImpl implements MessageHandler {
         }
     }
 
-    private void handleAuthorizedCommand(Long chatId, String text) {
+    /*private void handleAuthorizedCommand(Long chatId, String text) {
         if (!isUserAuthorized(chatId)) {
             telegramService.sendMessage(chatId, "Пожалуйста, авторизуйтесь: /login");
             return;
@@ -331,9 +350,9 @@ public class MessageHandlerImpl implements MessageHandler {
 
         String userState = stateManager.getUserState(chatId);
 
-        /* ЕСЛИ НЕ КОМАНДА МЕНЮ И МЫ В СОСТОЯНИИ ВВОДА ПОИСКА - ЭТО ПОИСКОВЫЙ ЗАПРОС*/
+        *//* ЕСЛИ НЕ КОМАНДА МЕНЮ И МЫ В СОСТОЯНИИ ВВОДА ПОИСКА - ЭТО ПОИСКОВЫЙ ЗАПРОС*//*
         if (!isMenuCommand(text) && UserStateManager.STATE_WAITING_SEARCH_QUERY.equals(userState)) {
-            /* Сохраняем запрос и показываем подтверждение*/
+            *//* Сохраняем запрос и показываем подтверждение*//*
             stateManager.setTempSearchQuery(chatId, text);
             stateManager.setUserState(chatId, UserStateManager.STATE_WAITING_SEARCH_CONFIRMATION);
 
@@ -358,13 +377,13 @@ public class MessageHandlerImpl implements MessageHandler {
             return;
         }
 
-        /* ЕСЛИ НЕ КОМАНДА МЕНЮ И МЫ В ГЛАВНОМ МЕНЮ - ЭТО НЕИЗВЕСТНАЯ КОМАНДА*/
+        *//* ЕСЛИ НЕ КОМАНДА МЕНЮ И МЫ В ГЛАВНОМ МЕНЮ - ЭТО НЕИЗВЕСТНАЯ КОМАНДА*//*
         if (!isMenuCommand(text) && UserStateManager.STATE_AUTHORIZED_MAIN.equals(userState)) {
             telegramService.sendMessage(chatId, "Неизвестная команда");
             return;
         }
 
-        /* Проверка подписки для платных функций*/
+        *//* Проверка подписки для платных функций*//*
         if (!subscriptionService.isSubscriptionActive(user.getUsername()) && !isFreeCommand(text)) {
             telegramService.sendMessage(chatId, "❌ Требуется активная подписка!");
             sendSubscriptionMenu(chatId);
@@ -382,23 +401,23 @@ public class MessageHandlerImpl implements MessageHandler {
             searchService.searchByKeywords(chatId);
         } else if ("💳 Оплатить подписку".equals(text)) {
             sendSubscriptionMenu(chatId);
-        } else if (("1 месяц - " + this.monthlyPrice + this.currencySecond).equals(text)) {                             /* меняем на @Value*/
+        } else if (("1 месяц - " + this.monthlyPrice + this.currencySecond).equals(text)) {                             *//* меняем на @Value*//*
             paymentHandler.handleSubscriptionPayment(chatId, "MONTHLY");
-        } else if (("12 месяцев - " + this.yearlyPrice + this.currencySecond).equals(text)) {                          /* меняем на @Value*/
+        } else if (("12 месяцев - " + this.yearlyPrice + this.currencySecond).equals(text)) {                          *//* меняем на @Value*//*
             paymentHandler.handleSubscriptionPayment(chatId, "YEARLY");
         } else if ("🧹 Очистить все".equals(text)) {
             keywordService.clearAllKeywords(chatId);
             List<String> clearedKeywords = keywordService.getKeywordsForDisplay(chatId);
             telegramService.sendMessage(menuFactory.createKeywordsMenu(chatId, clearedKeywords));
         } else if ("🔙 Назад".equals(text)) {
-            /*sendMainMenu(chatId);*/
-            sendMainMenu(chatId, false); /* ← ОСТАВИТЬ false*/
+            *//*sendMainMenu(chatId);*//*
+            sendMainMenu(chatId, false); *//* ← ОСТАВИТЬ false*//*
         } else if ("🏠 Главное меню".equals(text)) {
-            /*sendMainMenu(chatId);*/
-            sendMainMenu(chatId, false); /* ← ОСТАВИТЬ false*/
-        } else if ("📋 Информация".equals(text)) {                    /* ← ДОБАВЛЯЕМ*/
+            *//*sendMainMenu(chatId);*//*
+            sendMainMenu(chatId, false); *//* ← ОСТАВИТЬ false*//*
+        } else if ("📋 Информация".equals(text)) {                    *//* ← ДОБАВЛЯЕМ*//*
             sendInfoMenu(chatId);
-        } else if ("📞 Контакты".equals(text)) {                     /* ← ДОБАВЛЯЕМ*/
+        } else if ("📞 Контакты".equals(text)) {                     *//* ← ДОБАВЛЯЕМ*//*
             sendContactsMenu(chatId);
         } else if ("⏰ Автопоиск".equals(text)) {
             autoSearchService.handleAutoSearchCommand(chatId);
@@ -407,18 +426,18 @@ public class MessageHandlerImpl implements MessageHandler {
         } else if ("🔕 Выключить автопоиск".equals(text)) {
             autoSearchService.handleDisableAutoSearch(chatId);
         } else if ("30 мин".equals(text) || "60 мин".equals(text) || "120 мин".equals(text)) {
-            /* ВСЕГДА ОБРАБАТЫВАЕМ КАК КОМАНДУ МЕНЮ*/
+            *//* ВСЕГДА ОБРАБАТЫВАЕМ КАК КОМАНДУ МЕНЮ*//*
             autoSearchService.handleIntervalButton(chatId, text);
         } else if ("✅ Начать поиск".equals(text) || "❌ Отмена".equals(text)) {
-            /* Эти кнопки обрабатываются выше в состоянии подтверждения*/
-            /* ничего не делаем, т.к. обрабатывается в другом месте*/
+            *//* Эти кнопки обрабатываются выше в состоянии подтверждения*//*
+            *//* ничего не делаем, т.к. обрабатывается в другом месте*//*
         } else if ("❌ Выйти".equals(text)) {
             authService.handleLogout(chatId);
         } else if (text.startsWith("✏️ Ключ ")) {
             keywordService.handleEditKeywordCommand(chatId, text);
         }
 
-        /* Добавляем в блок if-else после существующих команд:*/
+        *//* Добавляем в блок if-else после существующих команд:*//*
         else if ("⚙️ Сменить данные Profi_ru".equals(text)) {
             telegramService.sendMessage(chatId, "✏️ Введите новый логин для Profi_ru:");
             stateManager.setUserState(chatId, UserStateManager.STATE_CHANGE_CREDENTIALS_USERNAME);
@@ -428,6 +447,158 @@ public class MessageHandlerImpl implements MessageHandler {
             telegramService.sendMessage(chatId, "Неизвестная команда");
         }
 
+    }*/
+
+    private void handleAuthorizedCommand(Long chatId, String text) {
+        /** ПРОВЕРКА АВТОРИЗАЦИИ ПОЛЬЗОВАТЕЛЯ */
+        if (!isUserAuthorized(chatId)) {
+            telegramService.sendMessage(chatId, "Пожалуйста, авторизуйтесь: /login");
+            return;
+        }
+
+        User user = userService.findByTelegramChatId(chatId);
+        if (user == null) {
+            telegramService.sendMessage(chatId, "❌ Пользователь не найден");
+            return;
+        }
+
+        String userState = stateManager.getUserState(chatId);
+
+        /**
+         * ЕСЛИ НЕ КОМАНДА МЕНЮ И МЫ В СОСТОЯНИИ ВВОДА ПОИСКА - ЭТО ПОИСКОВЫЙ ЗАПРОС
+         * Обрабатываем текст как поисковый запрос
+         */
+        if (!isMenuCommand(text) && UserStateManager.STATE_WAITING_SEARCH_QUERY.equals(userState)) {
+            /** Сохраняем запрос и показываем подтверждение */
+            stateManager.setTempSearchQuery(chatId, text);
+            stateManager.setUserState(chatId, UserStateManager.STATE_WAITING_SEARCH_CONFIRMATION);
+
+            SendMessage confirmMessage = new SendMessage();
+            confirmMessage.setChatId(chatId.toString());
+            confirmMessage.setText("🔍 *Найти заказы по запросу:*\n\"`" + text + "`\"\n\nНачать поиск?");
+            confirmMessage.setParseMode("Markdown");
+
+            ReplyKeyboardMarkup keyboard = new ReplyKeyboardMarkup();
+            keyboard.setResizeKeyboard(true);
+            List<KeyboardRow> rows = new ArrayList<>();
+
+            KeyboardRow row1 = new KeyboardRow();
+            row1.add(new KeyboardButton("✅ Начать поиск"));
+            row1.add(new KeyboardButton("❌ Отмена"));
+
+            rows.add(row1);
+            keyboard.setKeyboard(rows);
+            confirmMessage.setReplyMarkup(keyboard);
+
+            telegramService.sendMessage(confirmMessage);
+            return;
+        }
+
+        /**
+         * ЕСЛИ НЕ КОМАНДА МЕНЮ И МЫ В ГЛАВНОМ МЕНЮ - ЭТО НЕИЗВЕСТНАЯ КОМАНДА
+         * Пользователь ввел непонятный текст в главном меню
+         */
+        if (!isMenuCommand(text) && UserStateManager.STATE_AUTHORIZED_MAIN.equals(userState)) {
+            telegramService.sendMessage(chatId, "Неизвестная команда");
+            return;
+        }
+
+        /** ПРОВЕРКА ПОДПИСКИ ДЛЯ ПЛАТНЫХ ФУНКЦИЙ */
+        if (!subscriptionService.isSubscriptionActive(user.getUsername()) && !isFreeCommand(text)) {
+            telegramService.sendMessage(chatId, "❌ Требуется активная подписка!");
+            sendSubscriptionMenu(chatId);
+            return;
+        }
+
+        /** ОБРАБОТКА КОМАНД МЕНЮ */
+        if ("🔍 Ручной поиск".equals(text)) {
+            /** Переход в состояние ввода поискового запроса */
+            stateManager.setUserState(chatId, UserStateManager.STATE_WAITING_SEARCH_QUERY);
+            telegramService.sendMessage(chatId, "Введите поисковый запрос:");
+
+        } else if ("⚙️ Ключевые слова".equals(text)) {
+            /** Переход в меню управления ключевыми словами */
+            stateManager.setUserState(chatId, UserStateManager.STATE_AUTHORIZED_KEYWORDS);
+            List<String> keywords = keywordService.getKeywordsForDisplay(chatId);
+            telegramService.sendMessage(menuFactory.createKeywordsMenu(chatId, keywords));
+
+        } else if ("🚀 Поиск по ключам".equals(text)) {
+            /** ЗАПУСК ПОИСКА ПО КЛЮЧЕВЫМ СЛОВАМ ЧЕРЕЗ ОЧЕРЕДЬ */
+            searchQueueService.addToQueue(chatId, null, SearchTask.SearchType.KEYWORDS);
+
+        } else if ("💳 Оплатить подписку".equals(text)) {
+            /** Переход в меню оплаты подписки */
+            sendSubscriptionMenu(chatId);
+
+        } else if (("1 месяц - " + this.monthlyPrice + this.currencySecond).equals(text)) {
+            /** Обработка оплаты месячной подписки */
+            paymentHandler.handleSubscriptionPayment(chatId, "MONTHLY");
+
+        } else if (("12 месяцев - " + this.yearlyPrice + this.currencySecond).equals(text)) {
+            /** Обработка оплаты годовой подписки */
+            paymentHandler.handleSubscriptionPayment(chatId, "YEARLY");
+
+        } else if ("🧹 Очистить все".equals(text)) {
+            /** Очистка всех ключевых слов */
+            keywordService.clearAllKeywords(chatId);
+            List<String> clearedKeywords = keywordService.getKeywordsForDisplay(chatId);
+            telegramService.sendMessage(menuFactory.createKeywordsMenu(chatId, clearedKeywords));
+
+        } else if ("🔙 Назад".equals(text)) {
+            /** Возврат в главное меню */
+            sendMainMenu(chatId, false);
+
+        } else if ("🏠 Главное меню".equals(text)) {
+            /** Возврат в главное меню */
+            sendMainMenu(chatId, false);
+
+        } else if ("📋 Информация".equals(text)) {
+            /** Переход в меню информации */
+            sendInfoMenu(chatId);
+
+        } else if ("📞 Контакты".equals(text)) {
+            /** Переход в меню контактов */
+            sendContactsMenu(chatId);
+
+        } else if ("⏰ Автопоиск".equals(text)) {
+            /** Переход в настройки автопоиска */
+            autoSearchService.handleAutoSearchCommand(chatId);
+
+        } else if ("🔔 Включить автопоиск".equals(text)) {
+            /** Включение автопоиска */
+            autoSearchService.handleEnableAutoSearch(chatId);
+
+        } else if ("🔕 Выключить автопоиск".equals(text)) {
+            /** Выключение автопоиска */
+            autoSearchService.handleDisableAutoSearch(chatId);
+
+        } else if ("30 мин".equals(text) || "60 мин".equals(text) || "120 мин".equals(text)) {
+            /** Обработка кнопок интервалов автопоиска */
+            autoSearchService.handleIntervalButton(chatId, text);
+
+        } else if ("✅ Начать поиск".equals(text) || "❌ Отмена".equals(text)) {
+            /**
+             * Эти кнопки обрабатываются выше в состоянии подтверждения
+             * ничего не делаем, т.к. обрабатывается в другом месте
+             */
+
+        } else if ("❌ Выйти".equals(text)) {
+            /** Выход из аккаунта */
+            authService.handleLogout(chatId);
+
+        } else if (text.startsWith("✏️ Ключ ")) {
+            /** Редактирование конкретного ключевого слова */
+            keywordService.handleEditKeywordCommand(chatId, text);
+
+        } else if ("⚙️ Сменить данные Profi_ru".equals(text)) {
+            /** Смена логина и пароля Profi.ru */
+            telegramService.sendMessage(chatId, "✏️ Введите новый логин для Profi_ru:");
+            stateManager.setUserState(chatId, UserStateManager.STATE_CHANGE_CREDENTIALS_USERNAME);
+
+        } else {
+            /** Неизвестная команда */
+            telegramService.sendMessage(chatId, "Неизвестная команда");
+        }
     }
 
     /* ДОБАВИТЬ МЕТОД ПРОВЕРКИ КОМАНД МЕНЮ*/

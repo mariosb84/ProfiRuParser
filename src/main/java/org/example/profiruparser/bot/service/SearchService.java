@@ -290,5 +290,81 @@ public class SearchService {
         executor.shutdown();
     }
 
+    /**
+     * Для очереди - прямой вызов без очереди
+     */
+    public void executeManualSearch(Long chatId, String query) {
+        /* Переносим сюда код из handleManualSearch без executor.submit*/
+        try {
+            User user = userService.findByTelegramChatId(chatId);
+            if (user == null) return;
+
+            telegramService.sendMessage(chatId, "🔍 Идет поиск...");
+            parser.ensureLoggedIn(user.getUsername(), user.getPassword());
+            List<ProfiOrder> orders = parser.parseOrders(query);
+            List<ProfiOrder> newOrders = filterNewOrders(user.getId(), orders);
+
+            if (newOrders.isEmpty()) {
+                telegramService.sendMessage(chatId, "❌ Ничего не найдено");
+            } else {
+                telegramService.sendMessage(chatId, "✅ Найдено: " + newOrders.size() + " заказов");
+                seenOrderService.markOrdersAsSeen(user.getId(),
+                        newOrders.stream().map(ProfiOrder::getId).collect(Collectors.toList()));
+                newOrders.forEach(order -> sendOrderCard(chatId, order));
+            }
+        } catch (Exception e) {
+            telegramService.sendMessage(chatId, "❌ Ошибка поиска: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Для очереди - прямой вызов поиска по ключам
+     */
+    public void executeKeywordSearch(Long chatId) {
+        /* Переносим сюда код из searchByKeywords без executor.submit*/
+        try {
+            User user = userService.findByTelegramChatId(chatId);
+            if (user == null) {
+                telegramService.sendMessage(chatId, "❌ Пользователь не найден");
+                return;
+            }
+
+            telegramService.sendMessage(chatId, "🚀 Идет поиск по ключевым словам...");
+
+            SendMessage hourglassMessage = SendMessage.builder()
+                    .chatId(chatId.toString())
+                    .text("*⌛*")
+                    .parseMode("Markdown")
+                    .build();
+            telegramService.sendMessage(hourglassMessage);
+
+            parser.ensureLoggedIn(user.getUsername(), user.getPassword());
+            LinkedHashSet<ProfiOrder> allOrders = new LinkedHashSet<>();
+
+            List<String> keywords = stateManager.getUserKeywords(chatId);
+            List<String> activeKeywords = keywords.stream()
+                    .filter(k -> k != null && !k.trim().isEmpty())
+                    .toList();
+
+            for (String keyword : activeKeywords) {
+                allOrders.addAll(parser.parseOrders(keyword));
+                Thread.sleep(1000);
+            }
+
+            List<ProfiOrder> newOrders = filterNewOrders(user.getId(), allOrders.stream().toList());
+
+            if (newOrders.isEmpty()) {
+                telegramService.sendMessage(chatId, "❌ По ключам ничего не найдено");
+            } else {
+                telegramService.sendMessage(chatId, "✅ Найдено: " + newOrders.size() + " заказов");
+                seenOrderService.markOrdersAsSeen(user.getId(),
+                        newOrders.stream().map(ProfiOrder::getId).collect(Collectors.toList()));
+                newOrders.forEach(order -> sendOrderCard(chatId, order));
+            }
+        } catch (Exception e) {
+            telegramService.sendMessage(chatId, "❌ Ошибка поиска: " + e.getMessage());
+        }
+    }
+
 }
 
