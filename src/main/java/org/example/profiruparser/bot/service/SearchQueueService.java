@@ -3,6 +3,8 @@ package org.example.profiruparser.bot.service;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.example.profiruparser.domain.model.User;
+import org.example.profiruparser.service.UserServiceData;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -24,6 +26,7 @@ public class SearchQueueService {
     private final SearchService searchService;
     private final TelegramService telegramService;
     private final UserStateManager stateManager;
+    private final UserServiceData userServiceData;
 
     @PostConstruct
     public void startWorkers() {
@@ -75,26 +78,37 @@ public class SearchQueueService {
     }
 
     private void processTask(SearchTask task) {
+        log.info("🎯 START PROCESSING TASK - ChatId: {}, Type: {}", task.getChatId(), task.getType());
+
         try {
             /* Обновляем время последнего поиска*/
             lastSearchTime.put(task.getChatId(), System.currentTimeMillis());
 
             /* Уведомляем о начале поиска*/
             telegramService.sendMessage(task.getChatId(), "🔍 Начинаю поиск...");
+            log.info("📢 SENT START MESSAGE TO USER");
+
+            User user = userServiceData.findByTelegramChatId(task.getChatId());
+            log.info("👤 USER FOUND: {}", user != null ? user.getUsername() : "NULL");
 
             /* Выполняем поиск*/
             if (task.getType() == SearchTask.SearchType.MANUAL) {
+                log.info("📝 CALLING executeManualSearch - Query: {}", task.getQuery());
                 searchService.executeManualSearch(task.getChatId(), task.getQuery());
             } else {
+                log.info("🔑 CALLING executeKeywordSearch");
                 searchService.executeKeywordSearch(task.getChatId());
             }
 
+            log.info("✅ TASK COMPLETED SUCCESSFULLY");
+
         } catch (Exception e) {
-            log.error("Error processing search task for chatId: {}", task.getChatId(), e);
-            telegramService.sendMessage(task.getChatId(), "❌ Ошибка при поиске");
+            log.error("❌ TASK FAILED - Error: {}", e.getMessage(), e);
+            telegramService.sendMessage(task.getChatId(), "❌ Ошибка при поиске: " + e.getMessage());
         } finally {
             userTasks.remove(task.getChatId());
             updateQueuePositions();
+            log.info("🧹 TASK CLEANED UP");
         }
     }
 
