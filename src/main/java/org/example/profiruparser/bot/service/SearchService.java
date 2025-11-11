@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.profiruparser.domain.dto.ProfiOrder;
 import org.example.profiruparser.domain.model.User;
 import org.example.profiruparser.parser.service.ProfiParserService;
+import org.example.profiruparser.parser.service.async.AsyncProfiParserService;
 import org.example.profiruparser.responder.ProfiResponder;
 import org.example.profiruparser.service.SeenOrderService;
 import org.example.profiruparser.service.SubscriptionService;
@@ -22,10 +23,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -43,7 +41,6 @@ public class SearchService {
     private final TelegramService telegramService;
     private final UserStateManager stateManager;
     private final SeenOrderService seenOrderService;
-
 
 /* ИСПОЛЬЗУЕМ FIXED THREAD POOL ДЛЯ УПРАВЛЕНИЯ ПОТОКАМИ ПОИСКА */
 
@@ -294,13 +291,17 @@ public class SearchService {
      * Для очереди - прямой вызов без очереди
      */
     public void executeManualSearch(Long chatId, String query) {
-        /* Переносим сюда код из handleManualSearch без executor.submit*/
         try {
             User user = userService.findByTelegramChatId(chatId);
             if (user == null) return;
 
             telegramService.sendMessage(chatId, "🔍 Идет поиск...");
+
+            /* ПРОСТО ВЫЗЫВАЕМ ЛОГИН БЕЗ .get()*/
+            log.info("🔐 Starting login...");
             parser.ensureLoggedIn(user.getUsername(), user.getPassword());
+
+            log.info("✅ Login completed, starting search...");
             List<ProfiOrder> orders = parser.parseOrders(query);
             List<ProfiOrder> newOrders = filterNewOrders(user.getId(), orders);
 
@@ -313,6 +314,7 @@ public class SearchService {
                 newOrders.forEach(order -> sendOrderCard(chatId, order));
             }
         } catch (Exception e) {
+            log.error("❌ Error in executeManualSearch: {}", e.getMessage(), e);
             telegramService.sendMessage(chatId, "❌ Ошибка поиска: " + e.getMessage());
         }
     }
@@ -321,8 +323,6 @@ public class SearchService {
      * Для очереди - прямой вызов поиска по ключам
      */
     public void executeKeywordSearch(Long chatId) {
-        /* Переносим сюда код из searchByKeywords без executor.submit*/
-
         log.info("🔍 EXECUTE KEYWORD SEARCH CALLED - ChatId: {}", chatId);
 
         try {
@@ -343,7 +343,12 @@ public class SearchService {
                     .build();
             telegramService.sendMessage(hourglassMessage);
 
+            /* ПРОСТО ВЫЗЫВАЕМ ЛОГИН БЕЗ .get()*/
+            log.info("🔐 Starting login...");
             parser.ensureLoggedIn(user.getUsername(), user.getPassword());
+
+            log.info("✅ Login completed, starting keyword search...");
+
             LinkedHashSet<ProfiOrder> allOrders = new LinkedHashSet<>();
 
             List<String> keywords = stateManager.getUserKeywords(chatId);
@@ -367,6 +372,7 @@ public class SearchService {
                 newOrders.forEach(order -> sendOrderCard(chatId, order));
             }
         } catch (Exception e) {
+            log.error("❌ Error in executeKeywordSearch: {}", e.getMessage(), e);
             telegramService.sendMessage(chatId, "❌ Ошибка поиска: " + e.getMessage());
         }
     }
