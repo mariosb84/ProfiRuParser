@@ -322,12 +322,17 @@ public class SearchService {
      */
     public void executeKeywordSearch(Long chatId) {
         /* Переносим сюда код из searchByKeywords без executor.submit*/
+
+        log.info("🔍 EXECUTE KEYWORD SEARCH CALLED - ChatId: {}", chatId);
+
         try {
             User user = userService.findByTelegramChatId(chatId);
             if (user == null) {
                 telegramService.sendMessage(chatId, "❌ Пользователь не найден");
                 return;
             }
+
+            log.info("✅ USER FOUND - Username: {}", user.getUsername());
 
             telegramService.sendMessage(chatId, "🚀 Идет поиск по ключевым словам...");
 
