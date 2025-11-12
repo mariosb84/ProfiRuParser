@@ -68,9 +68,9 @@ public class ProfiParserServiceAdapter implements ProfiParserService {
             CompletableFuture<String> future = asyncService.createSessionAsync(login, password);
             log.info("⏳ ADAPTER: Waiting for session creation...");
 
-           /* this.currentSessionId = future.get(30, TimeUnit.SECONDS);*/
+            this.currentSessionId = future.get(30, TimeUnit.SECONDS);
 
-            this.currentSessionId = future.get(2, TimeUnit.MINUTES); /* Увеличил до 2 минут*/
+          /*  this.currentSessionId = future.get(2, TimeUnit.MINUTES);*/ /* Увеличил до 2 минут*/
 
             log.info("Adapter: login successful, session: {}", currentSessionId);
         } catch (TimeoutException e) {
