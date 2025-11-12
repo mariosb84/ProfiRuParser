@@ -94,10 +94,12 @@ public class SearchQueueService {
             /* Выполняем поиск*/
             if (task.getType() == SearchTask.SearchType.MANUAL) {
                 log.info("📝 CALLING executeManualSearch - Query: {}", task.getQuery());
-                searchService.executeManualSearch(task.getChatId(), task.getQuery());
+                /*searchService.executeManualSearch(task.getChatId(), task.getQuery());*/
+                searchService.handleManualSearch(task.getChatId(), task.getQuery()); /* ← ИЗМЕНИЛ*/
             } else {
                 log.info("🔑 CALLING executeKeywordSearch");
-                searchService.executeKeywordSearch(task.getChatId());
+                /*searchService.executeKeywordSearch(task.getChatId());*/
+                searchService.searchByKeywords(task.getChatId()); /* ← ИЗМЕНИЛ*/
             }
 
             log.info("✅ TASK COMPLETED SUCCESSFULLY");
