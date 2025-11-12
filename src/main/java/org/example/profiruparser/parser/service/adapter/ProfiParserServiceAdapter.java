@@ -8,7 +8,9 @@ import org.example.profiruparser.parser.service.async.AsyncProfiParserService;
 import org.example.profiruparser.parser.service.async.SessionManager;
 import org.openqa.selenium.WebDriver;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -19,6 +21,7 @@ import java.util.concurrent.TimeoutException;
 @Slf4j
 @Primary /* ⚡ ВАЖНО: делаем этот бин основным!*/
 @Service
+@Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE) /* ← ДОБАВИТЬ ЭТУ СТРОКУ*/
 public class ProfiParserServiceAdapter implements ProfiParserService {
 
     private final AsyncProfiParserService asyncService;
