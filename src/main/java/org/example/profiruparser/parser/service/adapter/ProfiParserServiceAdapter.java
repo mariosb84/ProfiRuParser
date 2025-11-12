@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 @Slf4j
 @Primary /* ⚡ ВАЖНО: делаем этот бин основным!*/
@@ -65,10 +66,18 @@ public class ProfiParserServiceAdapter implements ProfiParserService {
         try {
             /* 🔄 Используем новую асинхронную логику*/
             CompletableFuture<String> future = asyncService.createSessionAsync(login, password);
-            this.currentSessionId = future.get(30, TimeUnit.SECONDS);
+            log.info("⏳ ADAPTER: Waiting for session creation...");
+
+           /* this.currentSessionId = future.get(30, TimeUnit.SECONDS);*/
+
+            this.currentSessionId = future.get(2, TimeUnit.MINUTES); /* Увеличил до 2 минут*/
 
             log.info("Adapter: login successful, session: {}", currentSessionId);
+        } catch (TimeoutException e) {
+            log.error("⏰ ADAPTER: Login TIMEOUT");
+            throw new LoginException("Таймаут логина: " + e.getMessage());
         } catch (Exception e) {
+            log.error("❌ ADAPTER: Login FAILED - {}", e.getMessage(), e);
             throw new LoginException("Ошибка входа: " + e.getMessage());
         }
     }

@@ -6,7 +6,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.example.profiruparser.domain.dto.ProfiOrder;
 import org.example.profiruparser.domain.model.User;
 import org.example.profiruparser.parser.service.ProfiParserService;
-import org.example.profiruparser.parser.service.async.AsyncProfiParserService;
 import org.example.profiruparser.responder.ProfiResponder;
 import org.example.profiruparser.service.SeenOrderService;
 import org.example.profiruparser.service.SubscriptionService;
