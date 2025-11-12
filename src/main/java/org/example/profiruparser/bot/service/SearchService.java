@@ -297,8 +297,8 @@ public class SearchService {
             telegramService.sendMessage(chatId, "🔍 Идет поиск...");
 
             /* ПРОСТО ВЫЗЫВАЕМ ЛОГИН БЕЗ .get()*/
-            log.info("🔐 Starting login...");
-            parser.ensureLoggedIn(user.getUsername(), user.getPassword());
+            /*log.info("🔐 Starting login...");
+            parser.ensureLoggedIn(user.getUsername(), user.getPassword());*/  /* убираем повторную авторизацию*/
 
             log.info("✅ Login completed, starting search...");
             List<ProfiOrder> orders = parser.parseOrders(query);
@@ -343,8 +343,8 @@ public class SearchService {
             telegramService.sendMessage(hourglassMessage);
 
             /* ПРОСТО ВЫЗЫВАЕМ ЛОГИН БЕЗ .get()*/
-            log.info("🔐 Starting login...");
-            parser.ensureLoggedIn(user.getUsername(), user.getPassword());
+          /*  log.info("🔐 Starting login...");
+            parser.ensureLoggedIn(user.getUsername(), user.getPassword());*/  /* убираем повторную авторизацию*/
 
             log.info("✅ Login completed, starting keyword search...");
 
