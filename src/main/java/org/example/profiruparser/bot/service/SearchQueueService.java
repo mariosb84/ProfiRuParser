@@ -7,8 +7,10 @@ import org.example.profiruparser.domain.model.User;
 import org.example.profiruparser.service.UserServiceData;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
-import java.util.Queue;
+/*import java.util.Queue;*/
 import java.util.concurrent.*;
 
 @Slf4j
@@ -16,7 +18,9 @@ import java.util.concurrent.*;
 @RequiredArgsConstructor
 public class SearchQueueService {
 
-    private final Queue<SearchTask> queue = new ConcurrentLinkedQueue<>();
+    /*private final Queue<SearchTask> queue = new ConcurrentLinkedQueue<>();*/
+    /* ЗАМЕНИТЬ НА BlockingQueue*/
+    private final BlockingQueue<SearchTask> queue = new LinkedBlockingQueue<>();
     private final Map<Long, SearchTask> userTasks = new ConcurrentHashMap<>();
     private final Map<Long, Long> lastSearchTime = new ConcurrentHashMap<>();
     private final Semaphore browserSemaphore = new Semaphore(3);
@@ -28,12 +32,45 @@ public class SearchQueueService {
     private final UserStateManager stateManager;
     private final UserServiceData userServiceData;
 
-    @PostConstruct
+   /* @PostConstruct
     public void startWorkers() {
         for (int i = 0; i < 3; i++) {
             new Thread(this::processQueue, "SearchWorker-" + i).start();
         }
+    }*/
+
+    @PostConstruct
+    public void startWorkers() {
+        for (int i = 0; i < 3; i++) {
+            Thread worker = new Thread(this::processQueue, "SearchWorker-" + i);
+            worker.setDaemon(true); /* Демон-потоки*/
+            worker.start();
+        }
+        log.info("✅ Started 3 SearchWorker threads with BlockingQueue");
     }
+
+    /*public void addToQueue(Long chatId, String query, SearchTask.SearchType type) {
+        *//* Проверяем лимит 1 поиск в 2 минуты*//*
+        Long lastSearch = lastSearchTime.get(chatId);
+        if (lastSearch != null && System.currentTimeMillis() - lastSearch < MIN_SEARCH_INTERVAL_MS) {
+            long waitTime = MIN_SEARCH_INTERVAL_MS - (System.currentTimeMillis() - lastSearch);
+            telegramService.sendMessage(chatId,
+                    "⏳ Следующий поиск будет доступен через " + (waitTime / 1000 / 60) + " минут");
+            return;
+        }
+
+        *//* Создаем задачу*//*
+        SearchTask task = new SearchTask(chatId, query, type, LocalDateTime.now(), queue.size() + 1);
+        queue.offer(task);
+        userTasks.put(chatId, task);
+
+        *//* Отправляем статус*//*
+        telegramService.sendMessage(chatId,
+                "⏳ Добавлен в очередь. Позиция: " + task.getPositionInQueue() +
+                        "\nОжидание: ~" + (task.getPositionInQueue() * 40 / 60) + " минут");
+
+        updateQueuePositions();
+    }*/
 
     public void addToQueue(Long chatId, String query, SearchTask.SearchType type) {
         /* Проверяем лимит 1 поиск в 2 минуты*/
@@ -45,8 +82,11 @@ public class SearchQueueService {
             return;
         }
 
-        /* Создаем задачу*/
-        SearchTask task = new SearchTask(chatId, query, type, LocalDateTime.now(), queue.size() + 1);
+        /* Создаем задачу - размер очереди может меняться, поэтому рассчитываем позицию*/
+        int position = queue.size() + 1;
+        SearchTask task = new SearchTask(chatId, query, type, LocalDateTime.now(), position);
+
+        /* Добавляем в очередь*/
         queue.offer(task);
         userTasks.put(chatId, task);
 
@@ -58,10 +98,10 @@ public class SearchQueueService {
         updateQueuePositions();
     }
 
-    private void processQueue() {
+  /*  private void processQueue() {
         while (true) {
             try {
-                browserSemaphore.acquire(); /* Ждем свободный браузер*/
+                browserSemaphore.acquire(); *//* Ждем свободный браузер*//*
 
                 SearchTask task = queue.poll();
                 if (task != null) {
@@ -75,6 +115,32 @@ public class SearchQueueService {
                 browserSemaphore.release();
             }
         }
+    }*/
+
+    private void processQueue() {
+        while (!Thread.currentThread().isInterrupted()) {
+            try {
+                log.debug("🔄 SearchWorker waiting for browser...");
+                browserSemaphore.acquire(); /* Ждем свободный браузер*/
+
+                log.debug("✅ Browser acquired, waiting for task...");
+                /* БЛОКИРУЮЩИЙ вызов - поток ждет пока появится задача*/
+                SearchTask task = queue.take();
+
+                log.info("🎯 Processing task for chatId: {}, type: {}",
+                        task.getChatId(), task.getType());
+                processTask(task);
+
+            } catch (InterruptedException e) {
+                log.info("SearchWorker interrupted");
+                Thread.currentThread().interrupt();
+                break;
+            } finally {
+                browserSemaphore.release();
+                log.debug("🔓 Browser released");
+            }
+        }
+        log.info("SearchWorker stopped");
     }
 
     private void processTask(SearchTask task) {
@@ -114,9 +180,18 @@ public class SearchQueueService {
         }
     }
 
-    private void updateQueuePositions() {
+    /*private void updateQueuePositions() {
         int position = 1;
         for (SearchTask task : queue) {
+            task.setPositionInQueue(position++);
+        }
+    }*/
+
+    private void updateQueuePositions() {
+        int position = 1;
+        /* Преобразуем в список чтобы избежать ConcurrentModificationException*/
+        List<SearchTask> tasks = new ArrayList<>(queue);
+        for (SearchTask task : tasks) {
             task.setPositionInQueue(position++);
         }
     }
@@ -127,3 +202,4 @@ public class SearchQueueService {
     }
 
 }
+
