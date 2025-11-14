@@ -150,7 +150,7 @@ public class SearchService {
         throw new NoSuchElementException("Search history item not found for: " + keyword);
     }
 
-    private void waitForSearchResultsWithBrowser(WebDriver browser) throws InterruptedException {
+   /* private void waitForSearchResultsWithBrowser(WebDriver browser) throws InterruptedException {
         for (int i = 0; i < 10; i++) {
             try {
                 boolean isLoading = !browser.findElements(By.cssSelector(this.loadingIndicator)).isEmpty();
@@ -158,9 +158,25 @@ public class SearchService {
                     return;
                 }
             } catch (Exception e) {
-                /* ignore */
+                *//* ignore *//*
             }
             Thread.sleep(1000);
+        }
+    }*/
+
+    private void waitForSearchResultsWithBrowser(WebDriver browser) {
+        WebDriverWait wait = createWait(browser, 15);
+
+        try {
+            /* Умное ожидание: ждем пока пропадет индикатор загрузки ИЛИ появятся результаты*/
+            wait.until(d -> {
+                boolean isLoading = !d.findElements(By.cssSelector(this.loadingIndicator)).isEmpty();
+                boolean hasResults = !d.findElements(By.cssSelector(this.orderCards)).isEmpty();
+                return !isLoading || hasResults;
+            });
+            log.debug("✅ Search results loaded successfully");
+        } catch (Exception e) {
+            log.warn("⚠️ Search results wait timeout, continuing anyway: {}", e.getMessage());
         }
     }
 
