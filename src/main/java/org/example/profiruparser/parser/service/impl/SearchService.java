@@ -180,7 +180,7 @@ public class SearchService {
         }
     }
 
-    private WebElement findSearchButtonWithBrowser(WebDriver browser) {
+   /* private WebElement findSearchButtonWithBrowser(WebDriver browser) {
         String[] selectors = this.searchButtonSelectors.split(",");
 
         for (String selector : selectors) {
@@ -190,10 +190,50 @@ public class SearchService {
                     return element;
                 }
             } catch (Exception e) {
-                /* continue */
+                *//* continue *//*
             }
         }
         throw new NoSuchElementException("Search button not found");
+    }*/
+
+    private WebElement findSearchButtonWithBrowser(WebDriver browser) {
+        WebDriverWait wait = createWait(browser, 5); /* Только 5 секунд вместо 10*/
+
+        String[] selectors = this.searchButtonSelectors.split(",");
+
+        for (String selector : selectors) {
+            try {
+                /* Пробуем быстро найти без ожидания сначала*/
+                WebElement element;
+                try {
+                    if (selector.startsWith("//")) {
+                        element = browser.findElement(By.xpath(selector.trim()));
+                    } else {
+                        element = browser.findElement(By.cssSelector(selector.trim()));
+                    }
+
+                    if (element.isDisplayed() && element.isEnabled()) {
+                        log.info("✅ Found search button instantly with selector: {}", selector);
+                        return element;
+                    }
+                } catch (Exception e) {
+                    /* Если не нашли быстро - ждем*/
+                    if (selector.startsWith("//")) {
+                        element = wait.until(ExpectedConditions.elementToBeClickable(
+                                By.xpath(selector.trim())));
+                    } else {
+                        element = wait.until(ExpectedConditions.elementToBeClickable(
+                                By.cssSelector(selector.trim())));
+                    }
+                }
+
+                return element;
+
+            } catch (Exception e) {
+                log.debug("Selector failed: {}", selector);
+            }
+        }
+        throw new NoSuchElementException("Search button not found with any selector");
     }
 
     private void scrollPageWithBrowser(WebDriver browser) throws InterruptedException {
