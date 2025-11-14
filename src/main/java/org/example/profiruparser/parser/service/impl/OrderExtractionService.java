@@ -12,6 +12,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service("orderExtractionService")
 @Qualifier("orderExtractionService")
@@ -40,12 +42,68 @@ public class OrderExtractionService {
     }
 
     public List<ProfiOrder> extractOrders(WebDriver driver, String keyword) {
+        List<WebElement> cards = driver.findElements(By.cssSelector(this.orderCards));
+        log.info("Total cards to process: {}", cards.size());
+
+        String lowerKeyword = keyword.toLowerCase();
+
+        /* 🔥 ПАРАЛЛЕЛЬНЫЙ ПАРСИНГ вместо последовательного*/
+        List<ProfiOrder> orders = cards.parallelStream()
+                .map(card -> {
+                    try {
+                        return processCardParallel(card, lowerKeyword, driver);
+                    } catch (Exception e) {
+                        log.debug("Error processing card: {}", e.getMessage());
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+        return orderSortingService.sortOrdersByDate(orders);
+    }
+
+    /* 🔥 ДОБАВИТЬ этот новый метод*/
+    private ProfiOrder processCardParallel(WebElement card, String lowerKeyword, WebDriver driver) {
+        try {
+            /* Быстро скроллим без задержек*/
+            ((JavascriptExecutor) driver).executeScript(
+                    "arguments[0].scrollIntoView({behavior: 'auto', block: 'center'});", card);
+
+            if (!card.isDisplayed()) return null;
+
+            String title = extractTitle(card);
+            if (title.isEmpty()) return null;
+
+            String lowerTitle = title.toLowerCase();
+            boolean matches = lowerTitle.contains(lowerKeyword) ||
+                    matchesKeywordVariations(title, lowerKeyword);
+
+            if (matches) {
+                ProfiOrder order = new ProfiOrder();
+                order.setId(card.getAttribute("id") != null ? card.getAttribute("id") : "id_" + System.currentTimeMillis());
+                order.setTitle(title);
+                order.setPrice(extractPrice(card));
+                order.setDescription(extractDescription(card));
+                order.setCreationTime(extractCreationTime(card));
+
+                log.debug("✅ PARALLEL ADDED: {} | Time: {}", title, order.getCreationTime());
+                return order;
+            }
+        } catch (Exception e) {
+            log.debug("Parallel card processing failed: {}", e.getMessage());
+        }
+        return null;
+    }
+
+
+  /*  public List<ProfiOrder> extractOrders(WebDriver driver, String keyword) {
         List<ProfiOrder> orders = new ArrayList<>();
         String lowerKeyword = keyword.toLowerCase();
 
-        /*List<WebElement> cards = driver.findElements(By.cssSelector("a[data-testid$='_order-snippet']"));*/ /*меняем на @Value*/
+        *//*List<WebElement> cards = driver.findElements(By.cssSelector("a[data-testid$='_order-snippet']"));*//* *//*меняем на @Value*//*
         List<WebElement> cards = driver.findElements(By.cssSelector(this.orderCards));
-        /*System.out.println("Total cards to process: " + cards.size());*/
+        *//*System.out.println("Total cards to process: " + cards.size());*//*
         log.info("Total cards to process: " + cards.size());
 
         for (int i = 0; i < cards.size(); i++) {
@@ -53,7 +111,7 @@ public class OrderExtractionService {
                 WebElement card = cards.get(i);
                 ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView({block: 'center'});", card);
 
-                /*Thread.sleep(100);*/                                                     /*меняем на "умные" задержки*/
+                *//*Thread.sleep(100);*//*                                                     *//*меняем на "умные" задержки*//*
                 ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView({behavior: 'auto', block: 'center'});", card);
 
                 if (!card.isDisplayed()) continue;
@@ -74,17 +132,17 @@ public class OrderExtractionService {
                     order.setCreationTime(extractCreationTime(card));
 
                     orders.add(order);
-                   /* System.out.println("✅ ADDED: " + title + " | Time: " + order.getCreationTime());*/
+                   *//* System.out.println("✅ ADDED: " + title + " | Time: " + order.getCreationTime());*//*
                     log.info("✅ ADDED: " + title + " | Time: " + order.getCreationTime());
                 }
             } catch (Exception e) {
-                /*System.err.println("Error processing card " + i + ": " + e.getMessage());*/
+                *//*System.err.println("Error processing card " + i + ": " + e.getMessage());*//*
                 log.error("Error processing card " + i + ": " + e.getMessage());
             }
         }
 
         return orderSortingService.sortOrdersByDate(orders);
-    }
+    }*/
 
     private boolean matchesKeywordVariations(String title, String keyword) {
         String lowerTitle = title.toLowerCase();

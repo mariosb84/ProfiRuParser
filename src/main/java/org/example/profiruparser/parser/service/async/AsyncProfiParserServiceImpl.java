@@ -1,7 +1,9 @@
 package org.example.profiruparser.parser.service.async;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.profiruparser.domain.dto.ProfiOrder;
+import org.example.profiruparser.parser.service.SmartWaitService;
 import org.example.profiruparser.parser.service.impl.LoginService;
 import org.example.profiruparser.parser.service.impl.OrderExtractionService;
 import org.example.profiruparser.parser.service.impl.SearchService;
@@ -33,17 +35,21 @@ public class AsyncProfiParserServiceImpl implements AsyncProfiParserService {
 
     private final Map<String, Long> cookieCacheTime = new ConcurrentHashMap<>();                 /*меняем на "умные" задержки*/
 
+    private final SmartWaitService smartWaitService;
+
     @Autowired
     public AsyncProfiParserServiceImpl(BrowserPool browserPool,
                                        SessionManager sessionManager,
                                        LoginService loginService,
                                        SearchService searchService,
-                                       OrderExtractionService orderExtractionService) {
+                                       OrderExtractionService orderExtractionService,
+                                       SmartWaitService smartWaitService) {
         this.browserPool = browserPool;
         this.sessionManager = sessionManager;
         this.loginService = loginService;
         this.searchService = searchService;
         this.orderExtractionService = orderExtractionService;
+        this.smartWaitService = smartWaitService;
     }
 
     private boolean needsCookieReload(String sessionId) {                                  /*меняем на "умные" задержки*/
@@ -134,11 +140,55 @@ public class AsyncProfiParserServiceImpl implements AsyncProfiParserService {
     }
 
     /* 🔥 НОВЫЙ МЕТОД: Загрузка cookies сессии в браузер */
+
     private void loadSessionCookiesIntoBrowser(String sessionId, WebDriver browser) {
+        try {
+            Set<Cookie> cookies = ((SessionManagerImpl) sessionManager).getSessionCookies(sessionId);
+
+            if (cookies != null && !cookies.isEmpty()) {
+                log.info("🍪 Loading {} cookies into browser for session: {}", cookies.size(), sessionId);
+
+                /* 1. Переходим на страницу БЕЗ ожидания*/
+                browser.get(this.webDriverManagerGetDriverSecond);
+
+                /* 2. Быстрая очистка cookies БЕЗ ожидания*/
+                browser.manage().deleteAllCookies();
+
+                /* 3. Пакетная установка cookies (без логирования каждого)*/
+                int loadedCookies = 0;
+                for (Cookie cookie : cookies) {
+                    try {
+                        browser.manage().addCookie(cookie);
+                        loadedCookies++;
+                    } catch (Exception e) {
+                        /* игнорируем ошибки отдельных cookies*/
+                    }
+                }
+
+                /* 4. Умное ожидание вместо Thread.sleep(5000)*/
+                browser.navigate().refresh();
+                smartWaitService.waitForPageLoad(browser);
+                smartWaitService.waitForCookiesApplied(browser);
+
+                log.info("✅ Optimized cookies loaded: {} cookies", loadedCookies);
+                cookieCacheTime.put(sessionId, System.currentTimeMillis());
+
+            } else {
+                log.warn("⚠️ No cookies found for session: {}", sessionId);
+                throw new RuntimeException("No authentication cookies found for session");
+            }
+
+        } catch (Exception e) {
+            log.error("❌ Failed to load cookies for session {}: {}", sessionId, e.getMessage());
+            throw new RuntimeException("Failed to load session cookies: " + e.getMessage(), e);
+        }
+    }
+
+   /* private void loadSessionCookiesIntoBrowser(String sessionId, WebDriver browser) {
         try {
             Set<Cookie> cookies;
 
-            /* 🔥 РАЗДЕЛЯЕМ ЛОГИКУ: берем cookies из кэша или перезагружаем */
+            *//* 🔥 РАЗДЕЛЯЕМ ЛОГИКУ: берем cookies из кэша или перезагружаем *//*
             if (!needsCookieReload(sessionId)) {
                 log.info("🍪 Using cached cookies for session: {}", sessionId);
                 cookies = ((SessionManagerImpl) sessionManager).getSessionCookies(sessionId);
@@ -150,16 +200,16 @@ public class AsyncProfiParserServiceImpl implements AsyncProfiParserService {
             if (cookies != null && !cookies.isEmpty()) {
                 log.info("🍪 Loading {} cookies into browser for session: {}", cookies.size(), sessionId);
 
-                /* 🔥 ВАЖНО: Переходим на ТОЧНО ТУ ЖЕ СТРАНИЦУ где были получены cookies */
-                /* browser.get("https://profi.ru/backoffice/n.php"); */ /* меняем на @Value */
+                *//* 🔥 ВАЖНО: Переходим на ТОЧНО ТУ ЖЕ СТРАНИЦУ где были получены cookies *//*
+                *//* browser.get("https://profi.ru/backoffice/n.php"); *//* *//* меняем на @Value *//*
                 browser.get(this.webDriverManagerGetDriverSecond);
-                Thread.sleep(3000); /* меняем на "умные" задержки */
+                Thread.sleep(3000); *//* меняем на "умные" задержки *//*
 
-                /* Удаляем все существующие cookies */
+                *//* Удаляем все существующие cookies *//*
                 browser.manage().deleteAllCookies();
-                Thread.sleep(1000); /* меняем на "умные" задержки */
+                Thread.sleep(1000); *//* меняем на "умные" задержки *//*
 
-                /* Устанавливаем cookies сессии */
+                *//* Устанавливаем cookies сессии *//*
                 for (Cookie cookie : cookies) {
                     try {
                         browser.manage().addCookie(cookie);
@@ -169,11 +219,11 @@ public class AsyncProfiParserServiceImpl implements AsyncProfiParserService {
                     }
                 }
 
-                /* 🔥 ВАЖНО: Обновляем страницу и ждем загрузки */
+                *//* 🔥 ВАЖНО: Обновляем страницу и ждем загрузки *//*
                 browser.navigate().refresh();
-                Thread.sleep(5000); /* меняем на "умные" задержки - Даем время на применение cookies */
+                Thread.sleep(5000); *//* меняем на "умные" задержки - Даем время на применение cookies *//*
 
-                /* 🔥 ПРОВЕРЯЕМ АВТОРИЗАЦИЮ */
+                *//* 🔥 ПРОВЕРЯЕМ АВТОРИЗАЦИЮ *//*
                 String currentUrl = browser.getCurrentUrl();
                 if (currentUrl.contains("n.php") || currentUrl.contains("backoffice")) {
                     log.info("✅ Cookies loaded successfully - user is authenticated");
@@ -186,14 +236,14 @@ public class AsyncProfiParserServiceImpl implements AsyncProfiParserService {
                 throw new RuntimeException("No authentication cookies found for session");
             }
 
-            /* 🔥 Всегда обновляем время кэша */
+            *//* 🔥 Всегда обновляем время кэша *//*
             cookieCacheTime.put(sessionId, System.currentTimeMillis());
 
         } catch (Exception e) {
             log.error("❌ Failed to load cookies for session {}: {}", sessionId, e.getMessage());
             throw new RuntimeException("Failed to load session cookies: " + e.getMessage(), e);
         }
-    }
+    }*/
 
     @Override
     public CompletableFuture<Boolean> validateSessionAsync(String sessionId) {
