@@ -67,12 +67,12 @@ app:
       auth-success: ".user-avatar, [class*='user'], [data-testid*='user']"
       auth-failure: ".login-form, input.login-form__input-login"
 
-      # OrderExtractionService - ОБНОВЛЕННЫЕ СЕЛЕКТОРЫ + СТАРЫЕ
-      order-cards: ".sc-dYunZq.jkEmgG, a[data-testid$='_order-snippet'], [class*='order-card']"
-      title-selectors: ".order-card-header__title-container .bo_text, p.bo_text-extra-bold.bo_text__24, h3.SubjectAndPriceStyles__SubjectsText-sc-18v5hu8-1, h3.SubjectAndPriceStyles__SubjectsText-sc-18v5hu8-1.hEywcV, h3, [class*='title'], [class*='subject']"
-      price-selectors: ".order-card-price__container .bo_text__16, .order-card-param__text .bo_text__16, .SubjectAndPriceStyles__PriceValue-sc-18v5hu8-5, .SubjectAndPriceStyles__PriceValue-sc-18v5hu8-5.lfrrNh, [class*='price']"
-      description-selectors: ".order-card-param__container .order-card-param__text.bo_text__16, .order-card-param__text.bo_text__16, .SnippetBodyStyles__MainInfo-sc-tnih0-6, [class*='description'], [class*='info']"
-      time-selectors: ".order-card-param-subitem__text.bo_text__16, [class*='order-card-param-subitem'] .bo_text__16, .Date__DateText-sc-e1f8oi-1, [class*='date'], [class*='time'], .order-date, .snippet-date"
+      # OrderExtractionService - ТОЧНЫЕ СЕЛЕКТОРЫ
+      order-cards: "a[data-testid$='_order-snippet']"
+      title-selectors: "p.bo_text-extra-bold.bo_text__24"
+      price-selectors: ".order-card-price__container .bo_text__16"
+      description-selectors: ".order-card-param__text.bo_text__16"
+      time-selectors: ".order-card-param-subitem__text.bo_text__16"
 
       # SearchService
       search-input: "input[data-testid='fulltext_edit_mode_test_id'], #searchField-1, .SearchFieldStyles__SearchInput-sc-10dn6mx-6"
