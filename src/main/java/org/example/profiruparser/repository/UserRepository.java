@@ -37,18 +37,6 @@ import java.util.Optional;
 
     boolean existsByPhone(String phone);
 
-   /* @Modifying(clearAutomatically = true)
-    @Query("UPDATE User u SET u.yandexJson = :yandexJson WHERE u.id = :id")
-    void updateYandexJson(@Param("id") Long id, @Param("yandexJson") String yandexJson);
-
-    @Modifying(clearAutomatically = true)
-    @Query("UPDATE User u SET u.questionJson = :questionJson WHERE u.id = :id")
-    int updateQuestionJson(@Param("id") Long id, @Param("questionJson") String questionJson);
-
-    @Modifying(clearAutomatically = true)
-    @Query("UPDATE User u SET u.yandexToken = :yandexToken WHERE u.id = :id")
-    int updateYandexToken(@Param("id") Long id, @Param("yandexToken") String yandexToken);*/
-
      @Modifying(clearAutomatically = true)
      @Transactional
      @Query("UPDATE User u SET u.subscriptionEndDate = :subscriptionEndDate WHERE u.id = :id")

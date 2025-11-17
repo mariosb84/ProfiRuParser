@@ -63,7 +63,7 @@ app:
       # LoginService
       login-input: "input.login-form__input-login"
       password-input: "input.login-form__input-password"
-      submit-button: "a.ButtonsContainer__SubmitButton-sc-1bmmrie-5, button[type='submit']"
+      submit-button: "a.ui-button.ui-button_primary[data-shmid='enter_with_sms_btn'], a.ButtonsContainer__SubmitButton-sc-1bmmrie-5, button[type='submit']"
       auth-success: ".user-avatar, [class*='user'], [data-testid*='user']"
       auth-failure: ".login-form, input.login-form__input-login"
 
@@ -114,4 +114,4 @@ rest:
   connection:
     timeout: 5000
   read:
-    timeout: 10000
+    timeout: 5000

@@ -62,7 +62,7 @@ public class SearchQueueService {
         userTasks.put(chatId, task);
 
         /* Рассчитываем ожидание в очереди - 2.5 минуты на задачу*/
-        long estimatedWaitMs = (position - 1) * 150_000L; // 2.5 минуты = 150 секунд на задачу
+        long estimatedWaitMs = (position - 1) * 150_000L; /* 2.5 минуты = 150 секунд на задачу*/
         String waitMessage = formatWaitTime(estimatedWaitMs);
 
         /* Отправляем статус*/
@@ -91,32 +91,6 @@ public class SearchQueueService {
             return seconds + " секунд";
         }
     }
-
-   /* public void addToQueue(Long chatId, String query, SearchTask.SearchType type) {
-        *//* Проверяем лимит 1 поиск в 2 минуты*//*
-        Long lastSearch = lastSearchTime.get(chatId);
-        if (lastSearch != null && System.currentTimeMillis() - lastSearch < MIN_SEARCH_INTERVAL_MS) {
-            long waitTime = MIN_SEARCH_INTERVAL_MS - (System.currentTimeMillis() - lastSearch);
-            telegramService.sendMessage(chatId,
-                    "⏳ Следующий поиск будет доступен через " + (waitTime / 1000 / 60) + " минут");
-            return;
-        }
-
-        *//* Создаем задачу - размер очереди может меняться, поэтому рассчитываем позицию*//*
-        int position = queue.size() + 1;
-        SearchTask task = new SearchTask(chatId, query, type, LocalDateTime.now(), position);
-
-        *//* Добавляем в очередь*//*
-        queue.offer(task);
-        userTasks.put(chatId, task);
-
-        *//* Отправляем статус*//*
-        telegramService.sendMessage(chatId,
-                "⏳ Добавлен в очередь. Позиция: " + task.getPositionInQueue() +
-                        "\nОжидание: ~" + (task.getPositionInQueue() * 40 / 60) + " минут");
-
-        updateQueuePositions();
-    }*/
 
     private void processQueue() {
         while (!Thread.currentThread().isInterrupted()) {
