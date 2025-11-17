@@ -57,7 +57,7 @@ public class AuthService {
         }
 
         stateManager.setUserState(chatId, UserStateManager.STATE_REGISTER_USERNAME);
-        telegramService.sendMessage(chatId, "Введите желаемый логин:");
+        telegramService.sendMessage(chatId, "Введите ваш логин от Profi_ru :");
     }
 
     public void handleUsernameInput(Long chatId, String username, boolean isRegistration) {

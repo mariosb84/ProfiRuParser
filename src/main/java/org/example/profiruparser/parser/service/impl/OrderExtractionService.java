@@ -10,7 +10,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -95,54 +94,6 @@ public class OrderExtractionService {
         }
         return null;
     }
-
-
-  /*  public List<ProfiOrder> extractOrders(WebDriver driver, String keyword) {
-        List<ProfiOrder> orders = new ArrayList<>();
-        String lowerKeyword = keyword.toLowerCase();
-
-        *//*List<WebElement> cards = driver.findElements(By.cssSelector("a[data-testid$='_order-snippet']"));*//* *//*меняем на @Value*//*
-        List<WebElement> cards = driver.findElements(By.cssSelector(this.orderCards));
-        *//*System.out.println("Total cards to process: " + cards.size());*//*
-        log.info("Total cards to process: " + cards.size());
-
-        for (int i = 0; i < cards.size(); i++) {
-            try {
-                WebElement card = cards.get(i);
-                ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView({block: 'center'});", card);
-
-                *//*Thread.sleep(100);*//*                                                     *//*меняем на "умные" задержки*//*
-                ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView({behavior: 'auto', block: 'center'});", card);
-
-                if (!card.isDisplayed()) continue;
-
-                String title = extractTitle(card);
-                if (title.isEmpty()) continue;
-
-                String lowerTitle = title.toLowerCase();
-                boolean matches = lowerTitle.contains(lowerKeyword) ||
-                        matchesKeywordVariations(title, keyword);
-
-                if (matches) {
-                    ProfiOrder order = new ProfiOrder();
-                    order.setId(card.getAttribute("id") != null ? card.getAttribute("id") : "id_" + i);
-                    order.setTitle(title);
-                    order.setPrice(extractPrice(card));
-                    order.setDescription(extractDescription(card));
-                    order.setCreationTime(extractCreationTime(card));
-
-                    orders.add(order);
-                   *//* System.out.println("✅ ADDED: " + title + " | Time: " + order.getCreationTime());*//*
-                    log.info("✅ ADDED: " + title + " | Time: " + order.getCreationTime());
-                }
-            } catch (Exception e) {
-                *//*System.err.println("Error processing card " + i + ": " + e.getMessage());*//*
-                log.error("Error processing card " + i + ": " + e.getMessage());
-            }
-        }
-
-        return orderSortingService.sortOrdersByDate(orders);
-    }*/
 
     private boolean matchesKeywordVariations(String title, String keyword) {
         String lowerTitle = title.toLowerCase();

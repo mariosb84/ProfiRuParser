@@ -1,6 +1,5 @@
 package org.example.profiruparser.parser.service.async;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.example.profiruparser.domain.dto.ProfiOrder;
 import org.example.profiruparser.parser.service.SmartWaitService;
@@ -183,67 +182,6 @@ public class AsyncProfiParserServiceImpl implements AsyncProfiParserService {
             throw new RuntimeException("Failed to load session cookies: " + e.getMessage(), e);
         }
     }
-
-   /* private void loadSessionCookiesIntoBrowser(String sessionId, WebDriver browser) {
-        try {
-            Set<Cookie> cookies;
-
-            *//* 🔥 РАЗДЕЛЯЕМ ЛОГИКУ: берем cookies из кэша или перезагружаем *//*
-            if (!needsCookieReload(sessionId)) {
-                log.info("🍪 Using cached cookies for session: {}", sessionId);
-                cookies = ((SessionManagerImpl) sessionManager).getSessionCookies(sessionId);
-            } else {
-                log.info("🍪 Reloading cookies for session: {}", sessionId);
-                cookies = ((SessionManagerImpl) sessionManager).getSessionCookies(sessionId);
-            }
-
-            if (cookies != null && !cookies.isEmpty()) {
-                log.info("🍪 Loading {} cookies into browser for session: {}", cookies.size(), sessionId);
-
-                *//* 🔥 ВАЖНО: Переходим на ТОЧНО ТУ ЖЕ СТРАНИЦУ где были получены cookies *//*
-                *//* browser.get("https://profi.ru/backoffice/n.php"); *//* *//* меняем на @Value *//*
-                browser.get(this.webDriverManagerGetDriverSecond);
-                Thread.sleep(3000); *//* меняем на "умные" задержки *//*
-
-                *//* Удаляем все существующие cookies *//*
-                browser.manage().deleteAllCookies();
-                Thread.sleep(1000); *//* меняем на "умные" задержки *//*
-
-                *//* Устанавливаем cookies сессии *//*
-                for (Cookie cookie : cookies) {
-                    try {
-                        browser.manage().addCookie(cookie);
-                        log.debug("✅ Added cookie: {} = {}", cookie.getName(), cookie.getValue());
-                    } catch (Exception e) {
-                        log.warn("⚠️ Failed to add cookie: {}", cookie.getName());
-                    }
-                }
-
-                *//* 🔥 ВАЖНО: Обновляем страницу и ждем загрузки *//*
-                browser.navigate().refresh();
-                Thread.sleep(5000); *//* меняем на "умные" задержки - Даем время на применение cookies *//*
-
-                *//* 🔥 ПРОВЕРЯЕМ АВТОРИЗАЦИЮ *//*
-                String currentUrl = browser.getCurrentUrl();
-                if (currentUrl.contains("n.php") || currentUrl.contains("backoffice")) {
-                    log.info("✅ Cookies loaded successfully - user is authenticated");
-                } else {
-                    log.warn("⚠️ Possible authentication issue after loading cookies");
-                }
-
-            } else {
-                log.warn("⚠️ No cookies found for session: {}", sessionId);
-                throw new RuntimeException("No authentication cookies found for session");
-            }
-
-            *//* 🔥 Всегда обновляем время кэша *//*
-            cookieCacheTime.put(sessionId, System.currentTimeMillis());
-
-        } catch (Exception e) {
-            log.error("❌ Failed to load cookies for session {}: {}", sessionId, e.getMessage());
-            throw new RuntimeException("Failed to load session cookies: " + e.getMessage(), e);
-        }
-    }*/
 
     @Override
     public CompletableFuture<Boolean> validateSessionAsync(String sessionId) {

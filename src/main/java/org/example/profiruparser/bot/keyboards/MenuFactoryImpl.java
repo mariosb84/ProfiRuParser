@@ -226,22 +226,6 @@ public class MenuFactoryImpl implements MenuFactory {
         return message;
     }
 
-    /*private String getSubscriptionStatus(String username) {
-        if (username == null) return "❌ Подписка: не активна";
-
-        LocalDateTime endDate = subscriptionService.getSubscriptionEndDate(username);
-        if (endDate == null) return "❌ Подписка: не активна";
-
-        if (endDate.isAfter(LocalDateTime.now())) {
-            return "✅ Подписка активна до: " +
-                    endDate.format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"));
-        } else {
-            return "❌ Подписка истекла: " +
-                    endDate.format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"));
-        }
-    }
-*/
-
     private String getSubscriptionStatus(String username) {
         return subscriptionService.getSubscriptionStatus(username); /* ← ВОТ ТАК*/
     }

@@ -150,20 +150,6 @@ public class SearchService {
         throw new NoSuchElementException("Search history item not found for: " + keyword);
     }
 
-   /* private void waitForSearchResultsWithBrowser(WebDriver browser) throws InterruptedException {
-        for (int i = 0; i < 10; i++) {
-            try {
-                boolean isLoading = !browser.findElements(By.cssSelector(this.loadingIndicator)).isEmpty();
-                if (!isLoading) {
-                    return;
-                }
-            } catch (Exception e) {
-                *//* ignore *//*
-            }
-            Thread.sleep(1000);
-        }
-    }*/
-
     private void waitForSearchResultsWithBrowser(WebDriver browser) {
         WebDriverWait wait = createWait(browser, 15);
 
@@ -179,22 +165,6 @@ public class SearchService {
             log.warn("⚠️ Search results wait timeout, continuing anyway: {}", e.getMessage());
         }
     }
-
-   /* private WebElement findSearchButtonWithBrowser(WebDriver browser) {
-        String[] selectors = this.searchButtonSelectors.split(",");
-
-        for (String selector : selectors) {
-            try {
-                WebElement element = browser.findElement(By.cssSelector(selector.trim()));
-                if (element.isDisplayed()) {
-                    return element;
-                }
-            } catch (Exception e) {
-                *//* continue *//*
-            }
-        }
-        throw new NoSuchElementException("Search button not found");
-    }*/
 
     private WebElement findSearchButtonWithBrowser(WebDriver browser) {
         WebDriverWait wait = createWait(browser, 5); /* Только 5 секунд вместо 10*/
