@@ -107,127 +107,169 @@ public class OrderExtractionService {
         return false;
     }
 
-    private String extractTitle(WebElement card) {
-                                                                                        /*меняем на @Value*/
-       /* String[] selectors = {
-                "h3.SubjectAndPriceStyles__SubjectsText-sc-18v5hu8-1",
-                "h3.SubjectAndPriceStyles__SubjectsText-sc-18v5hu8-1.hEywcV",
-                "h3",
-                "[class*='title']",
-                "[class*='subject']"
-        };*/
+ /*   private String extractTitle(WebElement card) {
+                                                                                        *//*меняем на @Value*//*
 
-        /*String[] selectors = {
-                this.titleSelectors
-        };*/
-
-        String[] selectors = this.titleSelectors.split(","); /* РАЗБИВАЕМ ПО ЗАПЯТОЙ*/
+        String[] selectors = this.titleSelectors.split(","); *//* РАЗБИВАЕМ ПО ЗАПЯТОЙ*//*
 
         for (String selector : selectors) {
             try {
                 WebElement element = card.findElement(By.cssSelector(selector.trim()));
 
-                /*WebElement element = card.findElement(By.cssSelector(selector));*/
+                *//*WebElement element = card.findElement(By.cssSelector(selector));*//*
 
                 String title = element.getText().trim();
                 if (!title.isEmpty()) return title;
             } catch (Exception e) {
-                /* continue*/
+                *//* continue*//*
+            }
+        }
+        return "";
+    }*/
+
+    private String extractTitle(WebElement card) {
+        /* Пробуем сначала весь селектор как есть (для сложных случаев)*/
+        try {
+            WebElement element = card.findElement(By.cssSelector(this.titleSelectors));
+            String title = element.getText().trim();
+            if (!title.isEmpty()) return title;
+        } catch (Exception e) {
+            /* Если не работает - пробуем разбить по запятой*/
+            String[] selectors = this.titleSelectors.split(",");
+            for (String selector : selectors) {
+                try {
+                    WebElement element = card.findElement(By.cssSelector(selector.trim()));
+                    String title = element.getText().trim();
+                    if (!title.isEmpty()) return title;
+                } catch (Exception ex) {
+                    /* continue*/
+                }
             }
         }
         return "";
     }
 
-    private String extractPrice(WebElement card) {
-                                                                              /*меняем на @Value*/
-        /*String[] selectors = {
-                ".SubjectAndPriceStyles__PriceValue-sc-18v5hu8-5",
-                ".SubjectAndPriceStyles__PriceValue-sc-18v5hu8-5.lfrrNh",
-                "[class*='price']"
-        };*/
+ /*   private String extractPrice(WebElement card) {
+                                                                              *//*меняем на @Value*//*
 
-        /*String[] selectors = {
-                this.priceSelectors
-        };*/
-
-        String[] selectors = this.priceSelectors.split(","); /* РАЗБИВАЕМ ПО ЗАПЯТОЙ*/
+        String[] selectors = this.priceSelectors.split(","); *//* РАЗБИВАЕМ ПО ЗАПЯТОЙ*//*
 
         for (String selector : selectors) {
             try {
 
-                /*WebElement element = card.findElement(By.cssSelector(selector));*/
+                *//*WebElement element = card.findElement(By.cssSelector(selector));*//*
 
                 WebElement element = card.findElement(By.cssSelector(selector.trim()));
 
-                /*return cleanPrice(element.getText());*/
+                *//*return cleanPrice(element.getText());*//*
 
-                return cleanPrice(element.getText().trim()); /* ДОБАВЬ .trim() ЗДЕСЬ*/
+                return cleanPrice(element.getText().trim()); *//* ДОБАВЬ .trim() ЗДЕСЬ*//*
 
             } catch (Exception e) {
-                /* continue*/
+                *//* continue*//*
+            }
+        }
+        return "0";
+    }*/
+
+    private String extractPrice(WebElement card) {
+        /* Пробуем сначала весь селектор как есть*/
+        try {
+            WebElement element = card.findElement(By.cssSelector(this.priceSelectors));
+            return cleanPrice(element.getText().trim());
+        } catch (Exception e) {
+            /* Если не работает - пробуем разбить по запятой*/
+            String[] selectors = this.priceSelectors.split(",");
+            for (String selector : selectors) {
+                try {
+                    WebElement element = card.findElement(By.cssSelector(selector.trim()));
+                    return cleanPrice(element.getText().trim());
+                } catch (Exception ex) {
+                    /* continue*/
+                }
             }
         }
         return "0";
     }
 
-    private String extractDescription(WebElement card) {
-                                                                                    /*меняем на @Value*/
-       /* String[] selectors = {
-                ".SnippetBodyStyles__MainInfo-sc-tnih0-6",
-                "[class*='description']",
-                "[class*='info']"
-        };*/
+   /* private String extractDescription(WebElement card) {
+                                                                                    *//*меняем на @Value*//*
 
-       /* String[] selectors = {
-                this.descriptionSelectors
-        };*/
-
-        String[] selectors = this.descriptionSelectors.split(","); /* РАЗБИВАЕМ ПО ЗАПЯТОЙ*/
+        String[] selectors = this.descriptionSelectors.split(","); *//* РАЗБИВАЕМ ПО ЗАПЯТОЙ*//*
 
         for (String selector : selectors) {
             try {
 
-                /*WebElement element = card.findElement(By.cssSelector(selector));*/
+                *//*WebElement element = card.findElement(By.cssSelector(selector));*//*
 
                 WebElement element = card.findElement(By.cssSelector(selector.trim()));
 
-                /*return element.getText();*/
+                *//*return element.getText();*//*
 
-                return element.getText().trim(); /* ДОБАВЬ .trim() ЗДЕСЬ*/
+                return element.getText().trim(); *//* ДОБАВЬ .trim() ЗДЕСЬ*//*
 
             } catch (Exception e) {
-                /* continue*/
+                *//* continue*//*
+            }
+        }
+        return "";
+    }*/
+
+    private String extractDescription(WebElement card) {
+        /* Пробуем сначала весь селектор как есть*/
+        try {
+            WebElement element = card.findElement(By.cssSelector(this.descriptionSelectors));
+            return element.getText().trim();
+        } catch (Exception e) {
+            /* Если не работает - пробуем разбить по запятой*/
+            String[] selectors = this.descriptionSelectors.split(",");
+            for (String selector : selectors) {
+                try {
+                    WebElement element = card.findElement(By.cssSelector(selector.trim()));
+                    return element.getText().trim();
+                } catch (Exception ex) {
+                    /* continue*/
+                }
             }
         }
         return "";
     }
 
-    private String extractCreationTime(WebElement card) {
-                                                                                        /*меняем на @Value*/
-       /* String[] timeSelectors = {
-                ".Date__DateText-sc-e1f8oi-1",
-                "[class*='date']",
-                "[class*='time']",
-                ".order-date",
-                ".snippet-date"
-        };*/
+ /*   private String extractCreationTime(WebElement card) {
+                                                                                        *//*меняем на @Value*//*
 
-       /* String[] timeSelectors = {
-                this.timeSelectors
-        };*/
-
-        String[] timeSelectors = this.timeSelectors.split(","); /* РАЗБИВАЕМ ПО ЗАПЯТОЙ*/
+        String[] timeSelectors = this.timeSelectors.split(","); *//* РАЗБИВАЕМ ПО ЗАПЯТОЙ*//*
 
         for (String selector : timeSelectors) {
             try {
 
-                /*WebElement timeElement = card.findElement(By.cssSelector(selector));*/
+                *//*WebElement timeElement = card.findElement(By.cssSelector(selector));*//*
 
                 WebElement timeElement = card.findElement(By.cssSelector(selector.trim()));
 
                 return timeElement.getText().trim();
             } catch (Exception e) {
-                /* continue*/
+                *//* continue*//*
+            }
+        }
+        return "Неизвестно";
+    }*/
+
+    private String extractCreationTime(WebElement card) {
+        /* Пробуем сначала весь селектор как есть*/
+        try {
+            WebElement timeElement = card.findElement(By.cssSelector(this.timeSelectors));
+            return timeElement.getText().trim();
+        } catch (Exception e) {
+            /* Если не работает - пробуем разбить по запятой*/
+            String[] timeSelectors = this.timeSelectors.split(",");
+            for (String selector : timeSelectors) {
+                try {
+                    WebElement timeElement = card.findElement(By.cssSelector(selector.trim()));
+                    return timeElement.getText().trim();
+                } catch (Exception ex) {
+                    /* continue*/
+                }
             }
         }
         return "Неизвестно";
