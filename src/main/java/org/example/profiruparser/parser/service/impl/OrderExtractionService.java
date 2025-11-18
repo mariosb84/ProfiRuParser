@@ -65,6 +65,10 @@ public class OrderExtractionService {
     /* 🔥 ДОБАВИТЬ этот новый метод*/
     private ProfiOrder processCardParallel(WebElement card, String lowerKeyword, WebDriver driver) {
         try {
+
+            String cardHtml = card.getAttribute("outerHTML");
+            log.debug("🔍 CARD HTML SAMPLE: {}", cardHtml.substring(0, Math.min(200, cardHtml.length())));
+
             /* Быстро скроллим без задержек*/
             ((JavascriptExecutor) driver).executeScript(
                     "arguments[0].scrollIntoView({behavior: 'auto', block: 'center'});", card);
