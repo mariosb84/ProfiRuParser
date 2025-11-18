@@ -222,8 +222,17 @@ public class OrderExtractionService {
         return "Неизвестно";
     }
 
-    private String cleanPrice(String price) {
+    /*private String cleanPrice(String price) {
         return price == null ? "0" : price.replaceAll("[^0-9]", "").trim();
+    }*/
+
+    private String cleanPrice(String price) {
+        if (price == null || price.trim().isEmpty()) {
+            return "0";
+        }
+
+        /* Убираем только символ валюты и лишние пробелы, сохраняя дефис*/
+        return price.replace("₽", "").trim();
     }
 
 }
