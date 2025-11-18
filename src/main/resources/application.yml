@@ -69,10 +69,10 @@ app:
 
       # OrderExtractionService
       order-cards: "a[data-testid$='_order-snippet']"
-      title-selectors: "h3.SubjectAndPriceStyles__SubjectsText-sc-18v5hu8-1, h3.SubjectAndPriceStyles__SubjectsText-sc-18v5hu8-1.hEywcV, h3, [class*='title'], [class*='subject']"
-      price-selectors: ".order-card-price__container .order-card-param__text .bo_text__16"
-      description-selectors: ".order-card-param__container .order-card-param__text.bo_text__16"
-      time-selectors: ".order-card-param-subitem__text.bo_text__16"
+      title-selectors: "h3.sc-dsHpdY.euAfRR"
+      price-selectors: ".sc-hViuxo.cYriQS"  # Реальная цена здесь!
+      description-selectors: "p.sc-qkzgo.divJlK"
+      time-selectors: "span.sc-iaHkcm.gXwcaM"
       # SearchService
       search-input: "input[data-testid='fulltext_edit_mode_test_id'], #searchField-1, .SearchFieldStyles__SearchInput-sc-10dn6mx-6"
       search-history: "[data-testid='suggest_view'] .CellStyles__Text-sc-4tqx95-4"
