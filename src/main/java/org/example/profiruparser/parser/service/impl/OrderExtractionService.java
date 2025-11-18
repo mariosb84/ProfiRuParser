@@ -107,7 +107,7 @@ public class OrderExtractionService {
         return false;
     }
 
- /*   private String extractTitle(WebElement card) {
+    /*private String extractTitle(WebElement card) {
                                                                                         *//*меняем на @Value*//*
 
         String[] selectors = this.titleSelectors.split(","); *//* РАЗБИВАЕМ ПО ЗАПЯТОЙ*//*
@@ -128,20 +128,25 @@ public class OrderExtractionService {
     }*/
 
     private String extractTitle(WebElement card) {
+        log.debug("💰 Searching title in card with selector: {}", this.titleSelectors);
         /* Пробуем сначала весь селектор как есть (для сложных случаев)*/
         try {
             WebElement element = card.findElement(By.cssSelector(this.titleSelectors));
             String title = element.getText().trim();
+            log.debug("✅ Title found: '{}'", title);
             if (!title.isEmpty()) return title;
         } catch (Exception e) {
+            log.debug("❌ Title not found with direct selector");
             /* Если не работает - пробуем разбить по запятой*/
             String[] selectors = this.titleSelectors.split(",");
             for (String selector : selectors) {
                 try {
                     WebElement element = card.findElement(By.cssSelector(selector.trim()));
                     String title = element.getText().trim();
+                    log.debug("✅ Title found with fallback '{}': '{}'", selector, title);
                     if (!title.isEmpty()) return title;
                 } catch (Exception ex) {
+                    log.debug("❌ Title not found with selector: {}", selector);
                     /* continue*/
                 }
             }
@@ -173,18 +178,27 @@ public class OrderExtractionService {
     }*/
 
     private String extractPrice(WebElement card) {
+        log.debug("💰 Searching price in card with selector: {}", this.priceSelectors);
         /* Пробуем сначала весь селектор как есть*/
         try {
             WebElement element = card.findElement(By.cssSelector(this.priceSelectors));
+            String price = cleanPrice(element.getText().trim());
+            log.debug("✅ Price found: '{}'", price);
             return cleanPrice(element.getText().trim());
         } catch (Exception e) {
+            log.debug("❌ Price not found with direct selector");
+
             /* Если не работает - пробуем разбить по запятой*/
             String[] selectors = this.priceSelectors.split(",");
             for (String selector : selectors) {
                 try {
                     WebElement element = card.findElement(By.cssSelector(selector.trim()));
+                    String price = cleanPrice(element.getText().trim());
+                    log.debug("✅ Price found with fallback '{}': '{}'", selector, price);
+
                     return cleanPrice(element.getText().trim());
                 } catch (Exception ex) {
+                    log.debug("❌ Price not found with selector: {}", selector);
                     /* continue*/
                 }
             }
@@ -216,23 +230,30 @@ public class OrderExtractionService {
     }*/
 
     private String extractDescription(WebElement card) {
+        log.debug("💰 Searching description in card with selector: {}", this.descriptionSelectors);
         /* Пробуем сначала весь селектор как есть*/
         try {
             WebElement element = card.findElement(By.cssSelector(this.descriptionSelectors));
+            String description = element.getText().trim();
+            log.debug("✅ Description found: '{}'", description);
             return element.getText().trim();
         } catch (Exception e) {
+            log.debug("❌ Description not found with direct selector");
             /* Если не работает - пробуем разбить по запятой*/
             String[] selectors = this.descriptionSelectors.split(",");
             for (String selector : selectors) {
                 try {
                     WebElement element = card.findElement(By.cssSelector(selector.trim()));
+                    String description = element.getText().trim();
+                    log.debug("✅ Description found with fallback '{}': '{}'", selector, description);
                     return element.getText().trim();
                 } catch (Exception ex) {
+                    log.debug("❌  Description not found with selector: {}", selector);
                     /* continue*/
                 }
             }
         }
-        return "";
+        return "Нет данных";
     }
 
  /*   private String extractCreationTime(WebElement card) {
@@ -257,17 +278,24 @@ public class OrderExtractionService {
 
     private String extractCreationTime(WebElement card) {
         /* Пробуем сначала весь селектор как есть*/
+        log.debug("💰 Searching CreationTime in card with selector: {}", this.timeSelectors);
         try {
             WebElement timeElement = card.findElement(By.cssSelector(this.timeSelectors));
+            String creationTime = timeElement.getText().trim();
+            log.debug("✅ CreationTime found: '{}'", creationTime);
             return timeElement.getText().trim();
         } catch (Exception e) {
+            log.debug("❌ CreationTime not found with direct selector");
             /* Если не работает - пробуем разбить по запятой*/
             String[] timeSelectors = this.timeSelectors.split(",");
             for (String selector : timeSelectors) {
                 try {
                     WebElement timeElement = card.findElement(By.cssSelector(selector.trim()));
+                    String creationTime = timeElement.getText().trim();
+                    log.debug("✅ CreationTime found with fallback '{}': '{}'", selector, creationTime);
                     return timeElement.getText().trim();
                 } catch (Exception ex) {
+                    log.debug("❌ CreationTime not found with selector: {}", selector);
                     /* continue*/
                 }
             }
