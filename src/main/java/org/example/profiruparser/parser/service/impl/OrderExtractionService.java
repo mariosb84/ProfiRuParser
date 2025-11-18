@@ -111,26 +111,6 @@ public class OrderExtractionService {
         return false;
     }
 
-    /*private String extractTitle(WebElement card) {
-                                                                                        *//*меняем на @Value*//*
-
-        String[] selectors = this.titleSelectors.split(","); *//* РАЗБИВАЕМ ПО ЗАПЯТОЙ*//*
-
-        for (String selector : selectors) {
-            try {
-                WebElement element = card.findElement(By.cssSelector(selector.trim()));
-
-                *//*WebElement element = card.findElement(By.cssSelector(selector));*//*
-
-                String title = element.getText().trim();
-                if (!title.isEmpty()) return title;
-            } catch (Exception e) {
-                *//* continue*//*
-            }
-        }
-        return "";
-    }*/
-
     private String extractTitle(WebElement card) {
         log.debug("💰 Searching title in card with selector: {}", this.titleSelectors);
         log.debug("Card HTML: {}", card.getAttribute("outerHTML"));
@@ -158,29 +138,6 @@ public class OrderExtractionService {
         }
         return "";
     }
-
- /*   private String extractPrice(WebElement card) {
-                                                                              *//*меняем на @Value*//*
-
-        String[] selectors = this.priceSelectors.split(","); *//* РАЗБИВАЕМ ПО ЗАПЯТОЙ*//*
-
-        for (String selector : selectors) {
-            try {
-
-                *//*WebElement element = card.findElement(By.cssSelector(selector));*//*
-
-                WebElement element = card.findElement(By.cssSelector(selector.trim()));
-
-                *//*return cleanPrice(element.getText());*//*
-
-                return cleanPrice(element.getText().trim()); *//* ДОБАВЬ .trim() ЗДЕСЬ*//*
-
-            } catch (Exception e) {
-                *//* continue*//*
-            }
-        }
-        return "0";
-    }*/
 
     private String extractPrice(WebElement card) {
         log.debug("💰 Searching price in card with selector: {}", this.priceSelectors);
@@ -211,29 +168,6 @@ public class OrderExtractionService {
         return "0";
     }
 
-   /* private String extractDescription(WebElement card) {
-                                                                                    *//*меняем на @Value*//*
-
-        String[] selectors = this.descriptionSelectors.split(","); *//* РАЗБИВАЕМ ПО ЗАПЯТОЙ*//*
-
-        for (String selector : selectors) {
-            try {
-
-                *//*WebElement element = card.findElement(By.cssSelector(selector));*//*
-
-                WebElement element = card.findElement(By.cssSelector(selector.trim()));
-
-                *//*return element.getText();*//*
-
-                return element.getText().trim(); *//* ДОБАВЬ .trim() ЗДЕСЬ*//*
-
-            } catch (Exception e) {
-                *//* continue*//*
-            }
-        }
-        return "";
-    }*/
-
     private String extractDescription(WebElement card) {
         log.debug("💰 Searching description in card with selector: {}", this.descriptionSelectors);
         /* Пробуем сначала весь селектор как есть*/
@@ -260,26 +194,6 @@ public class OrderExtractionService {
         }
         return "Нет данных";
     }
-
- /*   private String extractCreationTime(WebElement card) {
-                                                                                        *//*меняем на @Value*//*
-
-        String[] timeSelectors = this.timeSelectors.split(","); *//* РАЗБИВАЕМ ПО ЗАПЯТОЙ*//*
-
-        for (String selector : timeSelectors) {
-            try {
-
-                *//*WebElement timeElement = card.findElement(By.cssSelector(selector));*//*
-
-                WebElement timeElement = card.findElement(By.cssSelector(selector.trim()));
-
-                return timeElement.getText().trim();
-            } catch (Exception e) {
-                *//* continue*//*
-            }
-        }
-        return "Неизвестно";
-    }*/
 
     private String extractCreationTime(WebElement card) {
         /* Пробуем сначала весь селектор как есть*/
