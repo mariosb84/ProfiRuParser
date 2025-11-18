@@ -133,6 +133,7 @@ public class OrderExtractionService {
 
     private String extractTitle(WebElement card) {
         log.debug("💰 Searching title in card with selector: {}", this.titleSelectors);
+        log.debug("Card HTML: {}", card.getAttribute("outerHTML"));
         /* Пробуем сначала весь селектор как есть (для сложных случаев)*/
         try {
             WebElement element = card.findElement(By.cssSelector(this.titleSelectors));

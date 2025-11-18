@@ -68,11 +68,11 @@ app:
       auth-failure: ".login-form, input.login-form__input-login"
 
       # OrderExtractionService
-      order-cards: "a[data-testid$='_order-snippet'], .sc-dYunZq.jkEmgG"
-      title-selectors: "h3.SubjectAndPriceStyles__SubjectsText-sc-18v5hu8-1, .bo_text-extra-bold.bo_text__24"
-      price-selectors: ".SubjectAndPriceStyles__PriceValue-sc-18v5hu8-5, .order-card-compound-price__price"
-      description-selectors: ".SnippetBodyStyles__MainInfo-sc-tnih0-6, .order-card-param__text"
-      time-selectors: ".Date__DateText-sc-e1f8oi-1, .order-card-param-subitem__text"
+      order-cards: ".order-card__container, [data-testid*='orderCard']"
+      title-selectors: ".bo_text-extra-bold.bo_text__24, [class*='order-card-header__title'] p, h1, h2, h3"
+      price-selectors: ".order-card-compound-price__price, [class*='price']"
+      description-selectors: ".order-card-param__text, .order-card-param-list__item p"
+      time-selectors: ".order-card-param-subitem__text, [class*='time'], [class*='date']"
       # SearchService
       search-input: "input[data-testid='fulltext_edit_mode_test_id'], #searchField-1, .SearchFieldStyles__SearchInput-sc-10dn6mx-6"
       search-history: "[data-testid='suggest_view'] .CellStyles__Text-sc-4tqx95-4"
