@@ -161,20 +161,20 @@ public class MenuFactoryImpl implements MenuFactory {
        /* row1.add(new KeyboardButton("1 месяц - 299₽"));*/ /* меняем на @Value*/
         row1.add(new KeyboardButton("1 месяц - " + this.monthlyPrice + this.currencySecond));
 
-        KeyboardRow row2 = new KeyboardRow();
+        /*KeyboardRow row2 = new KeyboardRow();*/
 
         /*row2.add(new KeyboardButton("12 месяцев - 2490₽"));*/ /* меняем на @Value*/
-        row2.add(new KeyboardButton("12 месяцев - " + this.yearlyPrice + this.currencySecond));
+       /* row2.add(new KeyboardButton("12 месяцев - " + this.yearlyPrice + this.currencySecond));*/ /*ПОКА УБИРАЕМ ПОДПИСКУ НА 1 ГОД*/
 
         /*KeyboardRow row3 = new KeyboardRow();
         row3.add(new KeyboardButton("✅ Проверить оплату"));*/  /* пока  убираем ручную проверку оплаты*/
 
-        KeyboardRow row3 = new KeyboardRow();
-        row3.add(new KeyboardButton("🔙 Назад"));
+        KeyboardRow row2 = new KeyboardRow();
+        row2.add(new KeyboardButton("🔙 Назад"));
 
         rows.add(row1);
         rows.add(row2);
-        rows.add(row3);
+       /* rows.add(row3);*/
         /*rows.add(row4);*/
         keyboard.setKeyboard(rows);
         message.setReplyMarkup(keyboard);
